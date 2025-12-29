@@ -1,0 +1,1234 @@
+{% extends "base.html" %}
+
+{% block head %}
+{{ super() }}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css">
+<style>
+  .page-shell {
+    display: flex;
+    align-items: flex-start;
+    overflow: hidden;
+    width: 100%;
+  }
+
+  .side-nav {
+    width: 260px;
+    background: rgba(255, 255, 255, 0.97);
+    border: 1px solid rgba(111, 61, 244, 0.12);
+    border-radius: 16px;
+    padding: 1rem;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+    position: fixed;
+    top: 64px;
+    left: 0;
+    height: calc(100vh - 64px);
+    overflow-y: auto;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+    z-index: 60;
+  }
+
+  .side-nav.collapsed {
+    transform: translateX(-110%);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .side-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.25);
+    z-index: 50;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+
+  .side-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .hamburger-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(111, 61, 244, 0.2);
+    background: #fff;
+    border-radius: 12px;
+    padding: 0.45rem 0.75rem;
+    font-weight: 700;
+    color: #4e22c8;
+  }
+
+  .side-brand {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    margin-bottom: 1rem;
+  }
+
+  .side-brand .title {
+    font-family: 'Lexend', sans-serif;
+    font-weight: 800;
+    color: var(--vet-primary-strong);
+  }
+
+  .side-section-title {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #9ca3af;
+    margin: 1rem 0 0.35rem;
+  }
+
+  .side-link {
+    width: 100%;
+    text-align: left;
+    border: 0;
+    background: transparent;
+    padding: 0.55rem 0.75rem;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 1rem;
+    color: #4b5563;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .dropdown-item {
+    font-size: 1rem;
+  }
+
+  .side-link:hover {
+    background: rgba(111, 61, 244, 0.08);
+    color: var(--vet-primary-strong);
+  }
+
+  .side-link.active {
+    background: rgba(111, 61, 244, 0.12);
+    color: var(--vet-primary-strong);
+  }
+
+  .side-nav .dropdown-toggle::after {
+    display: none;
+  }
+
+  .side-nav .dropdown-menu {
+    width: 100%;
+  }
+
+  @media (max-width: 992px) {
+    .page-shell {
+      flex-direction: column;
+    }
+  }
+
+  .first-workspace-wrapper {
+    display: flex;
+    justify-content: center;
+    padding: 2rem 0 4rem;
+  }
+
+  .first-workspace-card {
+    width: min(960px, 100%);
+    background: rgba(255, 255, 255, 0.96);
+    border-radius: 26px;
+    padding: 3rem;
+    box-shadow: 0 25px 70px rgba(79, 70, 229, 0.15);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 2rem;
+  }
+
+  .first-workspace-copy h2 {
+    font-family: 'Lexend', sans-serif;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+
+  .appointment-card .fw-bold.text-truncate {
+    white-space: normal;
+    word-break: break-word;
+    overflow: visible;
+  }
+
+  .slug-input-group .input-group-text {
+    background: #f4edff;
+    border-color: #e4dafd;
+    color: #6f3df4;
+    font-weight: 600;
+  }
+
+  .slug-helper {
+    font-size: 0.85rem;
+  }
+
+  @media (max-width: 768px) {
+    .first-workspace-card {
+      padding: 2rem;
+    }
+  }
+
+  .calendar-weekdays,
+  .calendar-grid {
+    min-width: 900px;
+  }
+
+  /* Appointments UI Refresh */
+  .appointment-card {
+    padding: 0.85rem 1rem;
+    border-radius: 12px;
+    background: #fff;
+    border: 1px solid rgba(111, 61, 244, 0.08);
+    margin-bottom: 0.6rem;
+    transition: all 0.2s ease;
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+  }
+
+  .appointment-card:hover {
+    background: #fbf9ff;
+    border-color: rgba(111, 61, 244, 0.25);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 16px rgba(111, 61, 244, 0.06);
+  }
+
+  .app-time {
+    font-size: 0.75rem;
+    color: #8b7ccf;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .app-title {
+    font-weight: 700;
+    color: #1f2937;
+    font-size: 0.95rem;
+    line-height: 1.3;
+  }
+
+  .btn-icon-soft {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    color: #9ca3af;
+    transition: all 0.2s;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+  }
+
+  .btn-icon-soft:hover {
+    background: #f3f4f6;
+    color: #111;
+  }
+
+  .btn-icon-soft.danger:hover {
+    background: #fef2f2;
+    color: #dc2626;
+  }
+
+  .btn-icon-soft.primary:hover {
+    background: #eff6ff;
+    color: #2563eb;
+  }
+
+  /* FullCalendar theme to match panel */
+  #fullCalendarRoot .fc {
+    --fc-border-color: rgba(111, 61, 244, 0.16);
+    --fc-page-bg-color: transparent;
+    --fc-today-bg-color: rgba(111, 61, 244, 0.06);
+    --fc-neutral-bg-color: rgba(111, 61, 244, 0.04);
+    --fc-event-border-color: transparent;
+  }
+  #fullCalendarRoot .fc .fc-toolbar-title {
+    font-family: 'Lexend', sans-serif;
+    font-weight: 800;
+    color: #2b1a66;
+  }
+  #fullCalendarRoot .fc .fc-button {
+    border-radius: 999px;
+    border-color: rgba(111, 61, 244, 0.25);
+  }
+  #fullCalendarRoot .fc .fc-button-primary {
+    background: rgba(111, 61, 244, 0.1);
+    border-color: rgba(111, 61, 244, 0.25);
+    color: #4e22c8;
+  }
+  #fullCalendarRoot .fc .fc-button-primary:not(:disabled).fc-button-active,
+  #fullCalendarRoot .fc .fc-button-primary:not(:disabled):active {
+    background: rgba(111, 61, 244, 0.2);
+    border-color: rgba(111, 61, 244, 0.35);
+    color: #3b1aa0;
+  }
+  #fullCalendarRoot .fc .fc-button:focus {
+    box-shadow: 0 0 0 0.2rem rgba(111, 61, 244, 0.2);
+  }
+  #fullCalendarRoot .fc .fc-event {
+    border-radius: 12px;
+    padding: 2px 4px;
+    box-shadow: 0 8px 18px rgba(111, 61, 244, 0.12);
+  }
+  #fullCalendarRoot .fc .fc-col-header-cell-cushion,
+  #fullCalendarRoot .fc .fc-daygrid-day-number {
+    color: #4b5563;
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="upload-overlay" class="position-fixed top-0 start-0 w-100 h-100 d-none"
+  style="background: rgba(0,0,0,0.35); z-index: 1050; backdrop-filter: blur(2px);">
+  <div class="d-flex justify-content-center align-items-center h-100">
+    <div class="text-white fw-semibold fs-4">Subiendo archivos...</div>
+  </div>
+</div>
+<div class="side-overlay" id="sideOverlay"></div>
+
+<div class="panel-container px-0 py-4 page-shell">
+  <aside class="side-nav collapsed" id="sideNav">
+    <div class="side-brand">
+      <div class="title">Vetflow</div>
+      <div class="text-muted small">{{ current_user_email or current_user_name or 'Invitado' }}</div>
+    </div>
+    <div class="workspace-switcher mb-3">
+      <label class="form-label small text-uppercase text-muted mb-1">Workspace</label>
+      <div class="dropdown w-100">
+        <button class="btn btn-light w-100 d-flex justify-content-between align-items-center" type="button"
+          data-bs-toggle="dropdown">
+          <span class="text-truncate">{{ current_workspace.name if current_workspace else "Elegir workspace" }}</span>
+          <span class="text-muted">▾</span>
+        </button>
+        <ul class="dropdown-menu w-100">
+          {% if workspaces %}
+          {% for ws in workspaces %}
+          <li><a class="dropdown-item {% if current_workspace and ws.id == current_workspace.id %}active{% endif %}"
+              href="{{ url_for('ui.workspace_by_slug', slug=ws.schema_name) }}">{{ ws.name }}</a></li>
+          {% endfor %}
+          {% else %}
+          <li><span class="dropdown-item-text text-muted">Sin workspaces</span></li>
+          {% endif %}
+        </ul>
+      </div>
+      <div class="d-flex flex-column gap-2 mt-3">
+        <button class="btn btn-outline-secondary w-100 btn-sm" type="button" data-bs-toggle="modal"
+          data-bs-target="#inviteWorkspaceModal" {% if not current_workspace %}disabled{% endif %}>Invitar a
+          workspace</button>
+        <button class="btn btn-outline-secondary w-100 btn-sm" type="button" data-bs-toggle="modal"
+          data-bs-target="#acceptInviteModal">Tengo un codigo</button>
+        <button class="btn btn-outline-secondary w-100 btn-sm" type="button" data-bs-toggle="modal"
+          data-bs-target="#membersWorkspaceModal" {% if not current_workspace %}disabled{% endif %}>Miembros del
+          workspace</button>
+        {% if current_membership_role == 'owner' %}
+        <button class="btn btn-outline-danger w-100 btn-sm" type="button" data-bs-toggle="modal"
+          data-bs-target="#deleteWorkspaceModal">Eliminar workspace</button>
+        {% endif %}
+        <button class="btn btn-light w-100 btn-sm" data-bs-toggle="modal" data-bs-target="#createWorkspaceModal">Crear
+          workspace</button>
+      </div>
+    </div>
+    <div class="side-section-title">Navegación</div>
+    <button class="side-link" data-tab-target="files">Archivos</button>
+    <button class="side-link" data-tab-target="calendar">Calendario</button>
+    <button class="side-link" data-tab-target="whatsapp">Integración WhatsApp</button>
+    {% if current_workspace %}
+    <a class="side-link" href="{{ url_for('ui.workspace_by_slug', slug=current_workspace.schema_name) }}">Resumen workspace</a>
+    {% endif %}
+  </aside>
+  <div class="side-overlay" id="sideOverlay"></div>
+
+  <div class="flex-grow-1 px-4" style="min-width: 0; overflow-x: hidden;">
+
+
+    {% if current_workspace %}
+    <div class="brand-hero p-3 mb-3 position-relative">
+      <div class="row align-items-center g-3">
+        <div class="col-md-8 d-flex align-items-center gap-3">
+          <div class="brand-logo shadow-sm" style="padding: 0.5rem; border-radius: 16px;">
+            <img src="{{ url_for('static', filename='img/control-vet-logo.png') }}" alt="Logo Control Vet"
+              style="max-width: 140px;">
+          </div>
+          <div>
+            <div class="brand-chip mb-1" style="font-size: 0.75rem;"><span class="dot"
+                style="width: 8px; height: 8px;"></span> {{ current_workspace.name }}</div>
+            <h1 class="brand-title mb-0" style="font-size: 1.75rem;">Panel {{ current_workspace.name }}</h1>
+            <p class="mb-0 brand-subtitle small opacity-75">
+              {{ current_workspace.description or "Gestor documental y agenda conectada a RAG para tu clinica." }}
+            </p>
+          </div>
+        </div>
+        <div class="col-md-5 col-lg-4 d-flex gap-2 justify-content-md-end flex-wrap">
+          <div class="stat-pill d-flex flex-column justify-content-center px-4" style="min-width: 130px;">
+            <small style="font-size: 0.7rem; opacity: 0.85;">Propietario</small>
+            <div class="h6 mb-0 text-truncate" style="max-width: 140px;">{{ current_workspace.owner_name or "Sin nombre"
+              }}</div>
+          </div>
+          <div class="d-flex flex-column gap-2" style="min-width: 100px;">
+            <div class="stat-pill clickable py-2 px-3 d-flex flex-column justify-content-center flex-fill text-center"
+              data-tab-target="files">
+              <small style="font-size: 0.65rem; opacity: 0.85;">Archivos</small>
+              <div class="h5 mb-0" style="line-height: 1;">{{ files|length }}</div>
+            </div>
+            <div class="stat-pill clickable py-2 px-3 d-flex flex-column justify-content-center flex-fill text-center"
+              data-tab-target="calendar">
+              <small style="font-size: 0.65rem; opacity: 0.85;">Citas</small>
+              <div class="h5 mb-0" style="line-height: 1;">{{ appointments|length }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+      {{ message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <div class="tab-content">
+      <div class="tab-pane fade" id="files" role="tabpanel">
+        {% include "partials/files_tab.html" %}
+      </div>
+      <div class="tab-pane fade show active" id="calendar" role="tabpanel">
+        {% include "partials/calendar_tab.html" %}
+      </div>
+      <div class="tab-pane fade" id="whatsapp" role="tabpanel">
+        {% include "partials/whatsapp_tab.html" %}
+      </div>
+    </div>
+    {% else %}
+    <div class="first-workspace-wrapper">
+      <div class="first-workspace-card">
+        <div class="first-workspace-copy">
+          <span class="badge bg-primary-subtle text-primary-emphasis rounded-pill mb-3 px-3 py-2">Nuevo usuario</span>
+          <h2>Configura tu primer workspace</h2>
+          <p class="text-muted">
+            Un workspace agrupa tus archivos, agenda y miembros. Elige un nombre y un URL ?nico.
+            Este formulario crear? la base de datos aislada y te a?adir? como propietario.
+          </p>
+          <ul class="text-muted small ps-3">
+            <li>Puedes invitar a tu equipo luego desde el panel.</li>
+            <li>El URL solo acepta letras, n?meros y guiones.</li>
+            <li>Todo se crea autom?ticamente en PostgreSQL.</li>
+          </ul>
+        </div>
+        <form method="POST" action="{{ url_for('ui.create_workspace_route') }}" class="d-flex flex-column gap-3"
+          data-workspace-form>
+          <div>
+            <label class="form-label">Nombre del workspace</label>
+            <input type="text" class="form-control form-control-lg" name="workspace_name"
+              value="{{ current_user_name or '' }}" data-slug-source required placeholder="Control Vet">
+          </div>
+          <div>
+            <label class="form-label">URL del workspace</label>
+            <div class="input-group slug-input-group">
+              <span class="input-group-text">app.vetflow.local/</span>
+              <input type="text" class="form-control form-control-lg" name="workspace_slug" data-slug-field required
+                placeholder="control-vet">
+            </div>
+            <div class="text-muted slug-helper mt-1">Sin espacios, se permiten letras min?sculas, n?meros y guiones.
+            </div>
+          </div>
+          <div>
+            <label class="form-label">Descripcion</label>
+            <textarea class="form-control" name="workspace_description" rows="3"
+              placeholder="Agenda conectada a RAG para mi cl?nica."></textarea>
+          </div>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Correo del propietario</label>
+              <input type="email" class="form-control" name="owner_email" value="{{ current_user_email or '' }}"
+                required placeholder="tu-correo@gmail.com">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Nombre del propietario</label>
+              <input type="text" class="form-control" name="owner_name" value="{{ current_user_name or '' }}"
+                placeholder="Nombre completo">
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary btn-lg mt-2">Crear workspace</button>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+{% block modals %}
+<!-- Modal de eventos del dia -->
+<div class="modal fade" id="dayEventsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="dayEventsTitle">Citas del dia</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="dayEventsBody">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal crear/editar cita rapida -->
+<div class="modal fade quick-event-modal" id="createEventModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+    <div class="modal-content shadow quick-event-card">
+      <div class="modal-header border-0 pb-0">
+
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="createEventForm" class="quick-event-form">
+        <div class="modal-body pt-0">
+          <input type="text" class="form-control form-control-lg quick-event-title" id="eventTitleInput"
+            placeholder="Agregar titulo" required>
+          <div class="quick-event-row">
+            <div class="quick-event-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="8" />
+                <path d="M12 8v4l3 1.8" />
+              </svg>
+            </div>
+            <div class="quick-event-datetime">
+              <input type="datetime-local" class="form-control" id="eventStartInput" required>
+              <span class="quick-event-separator">a</span>
+              <input type="datetime-local" class="form-control" id="eventEndInput" required>
+            </div>
+          </div>
+          <div class="quick-event-row">
+            <div class="quick-event-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M8 4h7l5 5v11H8z" />
+                <path d="M15 4v5h5" />
+                <path d="M11 14h7" />
+                <path d="M11 18h7" />
+              </svg>
+            </div>
+            <textarea class="form-control" id="eventDescInput" rows="2"
+              placeholder="Agregar descripcion o notas"></textarea>
+          </div>
+          <div class="quick-event-row">
+            <div class="quick-event-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="7" />
+                <circle cx="12" cy="12" r="3" />
+                <path d="M12 5v2" />
+                <path d="M12 17v2" />
+                <path d="M5 12h2" />
+                <path d="M17 12h2" />
+              </svg>
+            </div>
+            <select class="form-select" id="eventStatusSelect">
+              {% for status in appointment_statuses %}
+              <option value="{{ status.value }}">{{ status.label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0 flex-column flex-sm-row gap-2 justify-content-between align-items-start">
+          <div class="text-muted small" id="eventRangeLabel"></div>
+          <div class="d-flex gap-2 w-100 justify-content-sm-end">
+            <button type="button" class="btn btn-light flex-fill flex-sm-grow-0"
+              data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary flex-fill flex-sm-grow-0">Crear</button>
+          </div>
+        </div>
+        <input type="hidden" id="eventStartIso">
+        <input type="hidden" id="eventEndIso">
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal crear workspace -->
+<div class="modal fade" id="createWorkspaceModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <form method="POST" action="{{ url_for('ui.create_workspace_route') }}" data-workspace-form>
+        <div class="modal-header">
+          <h5 class="modal-title">Nuevo workspace</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Nombre del workspace</label>
+            <input type="text" class="form-control" name="workspace_name" required placeholder="Control Vet"
+              data-slug-source>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">URL del workspace</label>
+            <div class="input-group slug-input-group">
+              <span class="input-group-text">app.vetflow.local/</span>
+              <input type="text" class="form-control" name="workspace_slug" placeholder="control-vet" data-slug-field>
+            </div>
+            <small class="text-muted">Solo letras minúsculas, números y guiones.</small>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Descripcion</label>
+            <textarea class="form-control" name="workspace_description" rows="2"
+              placeholder="Uso interno del equipo"></textarea>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Correo del propietario (Gmail)</label>
+            <input type="email" class="form-control" name="owner_email" required placeholder="owner@example.com">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Nombre del propietario</label>
+            <input type="text" class="form-control" name="owner_name" placeholder="Nombre completo">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Crear workspace</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal invitar a workspace -->
+<div class="modal fade" id="inviteWorkspaceModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form id="inviteWorkspaceForm"
+        data-workspace-slug="{{ current_workspace.schema_name if current_workspace else '' }}">
+        <div class="modal-header">
+          <h5 class="modal-title">Invitar a workspace</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Correo de la persona</label>
+            <input type="email" class="form-control" name="invite_email" required placeholder="equipo@clinica.com">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Duracion del enlace (dias, opcional)</label>
+            <input type="number" class="form-control" name="invite_expires" min="0" max="365" placeholder="Sin vencimiento">
+            <div class="form-text">Deja vacio o 0 para que no expire.</div>
+          </div>
+          <div class="alert alert-info small mb-2">
+            Generamos un codigo unico y lo guardamos en la base. Copialo y compartelo por correo/chat.
+          </div>
+          <div class="small fw-semibold" id="inviteWorkspaceStatus"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button>
+      <button type="submit" class="btn btn-primary">Enviar invitacion</button>
+    </div>
+  </form>
+</div>
+  </div>
+</div>
+
+<!-- Modal aceptar invitacion -->
+<div class="modal fade" id="acceptInviteModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form id="acceptInviteForm">
+        <div class="modal-header">
+          <h5 class="modal-title">Unirme con codigo</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Codigo</label>
+            <input type="text" class="form-control" name="invite_code" required placeholder="ej. 1mJ5W2Gc">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Tu correo</label>
+            <input type="email" class="form-control" name="invite_email" required
+              placeholder="tu-correo@clinica.com" value="{{ current_user_email or '' }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Tu nombre (opcional)</label>
+            <input type="text" class="form-control" name="invite_name" placeholder="Nombre completo"
+              value="{{ current_user_name or '' }}">
+          </div>
+          <div class="alert alert-info small mb-2">
+            Usaremos el codigo para agregarte al workspace. Si es correcto, te redirigimos al panel.
+          </div>
+          <div class="small fw-semibold" id="acceptInviteStatus"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button>
+          <button type="submit" class="btn btn-primary">Unirme</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal miembros workspace -->
+<div class="modal fade" id="membersWorkspaceModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Miembros del workspace</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+        <div class="modal-body">
+          {% if workspace_members %}
+          <div class="table-responsive">
+            <table class="table align-middle">
+              <thead>
+              <tr>
+                <th>Correo</th>
+                <th>Nombre</th>
+                <th>Rol</th>
+                <th>Ingreso</th>
+                {% if current_membership_role == 'owner' %}<th></th>{% endif %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for m in workspace_members %}
+              <tr>
+                <td>{{ m.email }}</td>
+                <td>{{ m.display_name or 'Sin nombre' }}</td>
+                <td>
+                  <span class="badge {% if m.role == 'owner' %}bg-primary{% elif m.role == 'admin' %}bg-info{% else %}bg-secondary{% endif %}">
+                    {{ m.role|capitalize }}
+                  </span>
+                </td>
+                <td class="text-muted small">{{ m.joined_at }}</td>
+                {% if current_membership_role == 'owner' %}
+                <td class="text-end">
+                  {% if m.role != 'owner' %}
+                  <button class="btn btn-sm btn-outline-danger" type="button" data-remove-member
+                    data-member-email="{{ m.email }}">Quitar</button>
+                  {% endif %}
+                </td>
+                {% endif %}
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+          {% else %}
+          <div class="alert alert-light mb-0">
+            No hay miembros cargados para este workspace.
+          </div>
+          {% endif %}
+          <div id="membersRemoveStatus" class="small fw-semibold mt-2"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button>
+        </div>
+      </div>
+  </div>
+</div>
+
+<!-- Modal eliminar workspace -->
+<div class="modal fade" id="deleteWorkspaceModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title text-danger">Eliminar workspace</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="POST" action="{{ url_for('ui.delete_workspace_route') }}" id="deleteWorkspaceForm">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Selecciona el workspace a eliminar</label>
+            <select class="form-select" name="workspace_id" id="deleteWorkspaceSelect" required>
+              <option value="" disabled selected>Elige workspace</option>
+              {% for ws in workspaces %}
+              <option value="{{ ws.id }}">{{ ws.name }} ({{ ws.slug }})</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="alert alert-warning">
+            <div class="fw-bold">Si eliminas este workspace se perderá toda la información (archivos y citas).</div>
+            <div>Escribe exactamente: <code>eliminar esta area trabajo</code> para confirmar.</div>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Confirmación</label>
+            <input type="text" class="form-control" name="confirmation_phrase" id="deleteWorkspacePhrase"
+              placeholder="eliminar esta area trabajo" autocomplete="off" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-danger" id="deleteWorkspaceSubmit" disabled>Eliminar
+            definitivamente</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  window.vetflowData = {
+    appointments: {{ appointments | tojson }}
+  };
+  window.vetflowStatuses = {{ appointment_statuses | tojson }};
+  window.vetflowStatusLabels = {{ appointment_status_labels | tojson }};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+<script src="{{ url_for('static', filename='js/calendar.js') }}?v=11"></script>
+<script src="{{ url_for('static', filename='js/fullcalendar.js') }}?v=9"></script>
+<script src="{{ url_for('static', filename='js/whatsapp.js') }}?v=26"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    if (window.__renderCalendar) {
+      try { window.__renderCalendar(); } catch (err) { console.error('Error renderCalendar inline', err); }
+    } else {
+      console.error('calendar.js no inicializo');
+    }
+
+    const sideNav = document.getElementById('sideNav');
+    const sideOverlay = document.getElementById('sideOverlay');
+    const toggleSide = (open) => {
+      const shouldOpen = typeof open === 'boolean' ? open : sideNav?.classList.contains('collapsed');
+      if (shouldOpen) {
+        sideNav?.classList.remove('collapsed');
+        sideOverlay?.classList.add('open');
+      } else {
+        sideNav?.classList.add('collapsed');
+        sideOverlay?.classList.remove('open');
+      }
+    };
+    document.getElementById('toggleSideNav')?.addEventListener('click', () => toggleSide());
+    sideOverlay?.addEventListener('click', () => toggleSide(false));
+
+    const setActiveTab = (target) => {
+      document.querySelectorAll('.side-link').forEach((btn) => btn.classList.toggle('active', btn.dataset.tabTarget === target));
+      document.querySelectorAll('.tab-pane').forEach((pane) => {
+        pane.classList.remove('show', 'active');
+        if (pane.id === target) pane.classList.add('show', 'active');
+      });
+      if (target === 'calendar' && window.__renderCalendar) {
+        try { window.__renderCalendar(); } catch (e) { console.error(e); }
+      }
+      localStorage.setItem('vetflow_active_tab', target);
+    };
+
+    document.querySelectorAll('[data-tab-target]').forEach((el) => {
+      el.addEventListener('click', () => {
+        const target = el.getAttribute('data-tab-target');
+        setActiveTab(target);
+        toggleSide(false);
+      });
+    });
+
+    const storedTab = localStorage.getItem('vetflow_active_tab');
+    const defaultTab = storedTab && document.getElementById(storedTab) ? storedTab : 'calendar';
+    setActiveTab(defaultTab);
+
+    // arrancamos colapsado en desktop; en mobile se abre con el overlay
+    toggleSide(false);
+  });
+</script>
+<script>
+  (() => {
+    const fetchSasUrl = async (fileId) => {
+      const res = await fetch(`/file/${fileId}/sas`, {
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || `Error ${res.status}`);
+      }
+      if (!data.url) {
+        throw new Error('Respuesta sin URL SAS');
+      }
+      return data.url;
+    };
+
+    window.openFile = async (fileId) => {
+      if (!fileId) {
+        console.warn('openFile llamado sin id');
+        return;
+      }
+      const previewWindow = window.open('', '_blank');
+      if (previewWindow && previewWindow.document) {
+        previewWindow.document.body.innerHTML = '<div style="font-family:system-ui,sans-serif;padding:16px;">Abriendo archivo...</div>';
+      }
+      try {
+        const sasUrl = await fetchSasUrl(fileId);
+        if (previewWindow) {
+          previewWindow.location = sasUrl;
+        } else {
+          window.open(sasUrl, '_blank', 'noopener');
+        }
+      } catch (err) {
+        if (previewWindow && !previewWindow.closed) {
+          previewWindow.close();
+        }
+        console.error('No se pudo abrir el archivo', err);
+        const msg = err && err.message ? err.message : 'No se pudo generar el enlace SAS';
+        alert(`No se pudo abrir el archivo: ${msg}`);
+      }
+    };
+  })();
+</script>
+<script>
+  (() => {
+    // Toggle panel de citas sin que se mueva el layout
+    // const toggleBtn = document.querySelector('[data-appointments-toggle]');
+    // const panel = document.querySelector('[data-appointments-panel]');
+    // if (toggleBtn && panel) {
+    //   const syncState = () => {
+    //     const isHidden = panel.classList.contains('hidden-panel');
+    //     toggleBtn.setAttribute('aria-expanded', String(!isHidden));
+    //   };
+    //   toggleBtn.addEventListener('click', () => {
+    //     panel.classList.toggle('hidden-panel');
+    //     syncState();
+    //   });
+    //   syncState();
+    // }
+  })();
+</script>
+<script>
+  (() => {
+    // Confirmación de borrado de workspace
+    const phraseInput = document.getElementById('deleteWorkspacePhrase');
+    const selectInput = document.getElementById('deleteWorkspaceSelect');
+    const submitBtn = document.getElementById('deleteWorkspaceSubmit');
+    const requiredPhrase = 'eliminar esta area trabajo';
+
+    const validate = () => {
+      const phraseOk = (phraseInput?.value || '').trim().toLowerCase() === requiredPhrase;
+      const wsOk = !!(selectInput && selectInput.value);
+      if (submitBtn) {
+        submitBtn.disabled = !(phraseOk && wsOk);
+      }
+    };
+
+    phraseInput?.addEventListener('input', validate);
+    selectInput?.addEventListener('change', validate);
+    validate();
+  })();
+</script>
+<script>
+  (() => {
+    const form = document.getElementById('inviteWorkspaceForm');
+    if (!form) return;
+    const statusEl = document.getElementById('inviteWorkspaceStatus');
+    const submitBtn = form.querySelector('[type="submit"]');
+    const emailInput = form.querySelector('input[name="invite_email"]');
+    const expiresInput = form.querySelector('input[name="invite_expires"]');
+
+    const setStatus = (msg, type) => {
+      if (!statusEl) return;
+      statusEl.textContent = msg || '';
+      statusEl.classList.remove('text-danger', 'text-success');
+      if (type === 'error') statusEl.classList.add('text-danger');
+      if (type === 'success') statusEl.classList.add('text-success');
+    };
+
+    const resetForm = () => {
+      form.reset();
+      setStatus('', null);
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Enviar invitacion';
+      }
+    };
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      setStatus('', null);
+      const slug = form.dataset.workspaceSlug;
+      const email = (emailInput?.value || '').trim();
+      const expiresRaw = expiresInput?.value;
+      if (!slug) {
+        setStatus('Selecciona un workspace antes de invitar.', 'error');
+        return;
+      }
+      if (!email) {
+        setStatus('Ingresa un correo', 'error');
+        return;
+      }
+      const payload = { email };
+      if (expiresRaw !== undefined && expiresRaw !== '') {
+        payload.expires_in_days = Number(expiresRaw);
+      }
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Enviando...';
+      }
+
+      try {
+        const res = await fetch(`/w/${slug}/api/invites`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.error || `Error ${res.status}`);
+        }
+        const code = data?.invite?.invite_code ? ` Codigo: ${data.invite.invite_code}` : '';
+        setStatus(`Invitacion creada.${code}`, 'success');
+        form.reset();
+      } catch (err) {
+        setStatus(err?.message || 'No se pudo crear la invitacion', 'error');
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Enviar invitacion';
+        }
+      }
+    });
+
+    const modalEl = document.getElementById('inviteWorkspaceModal');
+    if (modalEl) {
+      modalEl.addEventListener('hidden.bs.modal', resetForm);
+    }
+  })();
+</script>
+<script>
+  (() => {
+    const form = document.getElementById('acceptInviteForm');
+    if (!form) return;
+    const statusEl = document.getElementById('acceptInviteStatus');
+    const submitBtn = form.querySelector('[type="submit"]');
+    const codeInput = form.querySelector('input[name="invite_code"]');
+    const emailInput = form.querySelector('input[name="invite_email"]');
+    const nameInput = form.querySelector('input[name="invite_name"]');
+
+    const setStatus = (msg, type) => {
+      if (!statusEl) return;
+      statusEl.textContent = msg || '';
+      statusEl.classList.remove('text-danger', 'text-success');
+      if (type === 'error') statusEl.classList.add('text-danger');
+      if (type === 'success') statusEl.classList.add('text-success');
+    };
+
+    const resetForm = () => {
+      setStatus('', null);
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Unirme';
+      }
+    };
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const code = (codeInput?.value || '').trim();
+      const email = (emailInput?.value || '').trim();
+      const name = (nameInput?.value || '').trim();
+      if (!code || !email) {
+        setStatus('Ingresa codigo y correo', 'error');
+        return;
+      }
+      setStatus('', null);
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Enviando...';
+      }
+      try {
+        const res = await fetch('/api/invites/accept', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code, email, name })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.error || `Error ${res.status}`);
+        }
+        const slug = data?.workspace?.schema_name || data?.workspace?.slug;
+        setStatus('Invitacion aceptada. Redirigiendo...', 'success');
+        if (slug) {
+          setTimeout(() => { window.location = `/w/${slug}`; }, 500);
+        } else {
+          setTimeout(() => { window.location.reload(); }, 500);
+        }
+      } catch (err) {
+        setStatus(err?.message || 'No se pudo aceptar la invitacion', 'error');
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Unirme';
+        }
+      }
+    });
+
+    const modalEl = document.getElementById('acceptInviteModal');
+    if (modalEl) {
+      modalEl.addEventListener('hidden.bs.modal', () => {
+        form.reset();
+        resetForm();
+      });
+    }
+  })();
+</script>
+<script>
+  (() => {
+    const removeButtons = document.querySelectorAll('[data-remove-member]');
+    if (!removeButtons.length) return;
+    const statusEl = document.getElementById('membersRemoveStatus');
+    const workspaceSlug = "{{ current_workspace.schema_name if current_workspace else '' }}";
+
+    const setStatus = (msg, type) => {
+      if (!statusEl) return;
+      statusEl.textContent = msg || '';
+      statusEl.classList.remove('text-danger', 'text-success');
+      if (type === 'error') statusEl.classList.add('text-danger');
+      if (type === 'success') statusEl.classList.add('text-success');
+    };
+
+    removeButtons.forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const email = btn.getAttribute('data-member-email');
+        if (!workspaceSlug || !email) return;
+        if (!confirm(`¿Quitar a ${email} del workspace?`)) return;
+        btn.disabled = true;
+        setStatus('', null);
+        try {
+          const res = await fetch(`/w/${workspaceSlug}/api/members/remove`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            throw new Error(data.error || `Error ${res.status}`);
+          }
+          setStatus('Miembro removido. Recargando...', 'success');
+          setTimeout(() => window.location.reload(), 500);
+        } catch (err) {
+          setStatus(err?.message || 'No se pudo remover', 'error');
+        } finally {
+          btn.disabled = false;
+        }
+      });
+    });
+  })();
+</script>
+<script>
+  (() => {
+    const slugify = (value) =>
+      String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 48);
+
+    const attachSlugSync = (form) => {
+      const nameInput = form.querySelector('[data-slug-source]');
+      const slugInput = form.querySelector('[data-slug-field]');
+      if (!nameInput || !slugInput) return;
+      let slugTouched = slugInput.value.trim().length > 0;
+
+      const setSlugValue = (value) => {
+        const next = slugify(value);
+        slugInput.value = next;
+      };
+
+      nameInput.addEventListener('input', () => {
+        if (slugTouched) return;
+        setSlugValue(nameInput.value);
+      });
+
+      slugInput.addEventListener('input', () => {
+        slugTouched = slugInput.value.trim().length > 0;
+        setSlugValue(slugInput.value);
+      });
+
+      if (!slugTouched) {
+        setSlugValue(nameInput.value || slugInput.value);
+      }
+    };
+
+    document.querySelectorAll('[data-workspace-form]').forEach(attachSlugSync);
+  })();
+</script>
+<script>
+  (() => {
+    // Drag and Drop para archivos
+    const dropZone = document.getElementById('filesDropZone');
+    const overlay = document.getElementById('filesDropOverlay');
+    const fileInput = document.getElementById('fileInput');
+    const uploadDrawer = document.getElementById('uploadDrawer');
+    const label = document.getElementById('selectedFilesLabel');
+
+    if (!dropZone || !overlay || !fileInput) return;
+
+    // Prevent defaults globalmente para evitar que el navegador abra el archivo
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      document.body.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    // Detectar drag sobre todo el documento para mostrar overlay
+    let dragCounter = 0;
+    document.body.addEventListener('dragenter', (e) => {
+      dragCounter++;
+      if (dragCounter === 1) {
+        overlay.classList.add('active');
+        // Asegurar que estamos en la tab de archivos si no lo estamos? 
+        // Por ahora asumimos que solo importa si el usuario quiere soltar.
+      }
+    });
+
+    document.body.addEventListener('dragleave', (e) => {
+      dragCounter--;
+      if (dragCounter === 0) {
+        overlay.classList.remove('active');
+      }
+    });
+
+    document.body.addEventListener('drop', (e) => {
+      dragCounter = 0;
+      overlay.classList.remove('active');
+
+      const dt = e.dataTransfer;
+      const files = dt.files;
+
+      if (files && files.length > 0) {
+        // Asignar archivos al input
+        fileInput.files = files;
+
+        // Actualizar etiqueta
+        if (label) {
+          label.textContent = files.length + ' archivo(s) seleccionados para subir';
+        }
+
+        // Abrir el drawer si está cerrado
+        if (uploadDrawer && !uploadDrawer.classList.contains('show')) {
+          // Usar Bootstrap API si está disponible o fallback manual
+          // Si tenemos bootstrap global:
+          try {
+            const bsCollapse = new bootstrap.Collapse(uploadDrawer, { show: true });
+          } catch (err) {
+            // Fallback simple por si bootstrap no esta en window
+            uploadDrawer.classList.add('show');
+          }
+        }
+
+        // Hacemos scroll suave hacia el formulario
+        uploadDrawer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  })();
+</script>
+{% endblock %}

@@ -1,0 +1,130 @@
+<div class="row g-3 flex-lg-nowrap align-items-stretch">
+  <div class="col-lg calendar-col" style="min-width: 0;">
+    <div class="card h-100">
+      <div class="card-body" style="overflow-x: auto;">
+        <div class="calendar-app-toolbar flex-wrap gap-3">
+          <div class="calendar-toolbar-left d-flex align-items-center gap-2">
+            <button class="btn btn-outline-light btn-icon-circle" id="prevMonth" aria-label="Anterior">
+              <span aria-hidden="true">&larr;</span>
+            </button>
+            <button class="btn btn-outline-light btn-icon-circle" id="nextMonth" aria-label="Siguiente">
+              <span aria-hidden="true">&rarr;</span>
+            </button>
+            <button class="btn btn-light btn-sm fw-semibold" id="todayBtn">Hoy</button>
+            <div class="calendar-current-date">
+              <div class="calendar-current-label" id="calendarMonthLabel">Calendario</div>
+              <div class="calendar-current-meta" id="calendarMonthMeta"></div>
+            </div>
+          </div>
+
+          <div class="calendar-toolbar-right d-flex align-items-center gap-2 flex-wrap ms-auto">
+            <div class="btn-group btn-group-sm shadow-sm" role="group" aria-label="Vista calendario">
+              <button type="button" class="btn btn-outline-secondary d-none d-md-block active"
+                data-calendar-view="month">Mes</button>
+              <button type="button" class="btn btn-outline-secondary d-none d-md-block"
+                data-calendar-view="week">Semana</button>
+              <button type="button" class="btn btn-outline-secondary" data-calendar-view="day">Dia</button>
+            </div>
+            <button class="btn btn-outline-primary btn-sm rounded-pill px-3" type="button" data-bs-toggle="collapse"
+              data-bs-target="#appointmentsCollapse" aria-expanded="true" aria-controls="appointmentsCollapse">
+              Panel de citas
+            </button>
+            <button class="btn btn-primary d-flex align-items-center gap-2" type="button" id="openQuickEventBtn">
+              <span class="quick-create-dot"></span>
+              Nueva cita
+            </button>
+          </div>
+        </div>
+        <div class="calendar-surface mt-2 position-relative" id="calendarSurface"
+          data-workspace-slug="{{ current_workspace.schema_name if current_workspace else '' }}">
+          <div id="fullCalendarRoot" class="mt-2" style="min-height: 650px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-auto appointments-col show" id="appointmentsCollapse" data-appointments-panel
+    style="width: 340px; max-width: 100%;">
+    <div class="card h-100">
+      <div class="card-body d-flex flex-column">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <button class="card-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#appointmentsCollapse"
+            aria-expanded="true" aria-controls="appointmentsCollapse">
+            <span class="card-title mb-0">Citas</span>
+            <span class="chevron" aria-hidden="true">&gt;</span>
+          </button>
+          <button class="btn btn-sm btn-outline-danger d-flex align-items-center gap-1" id="bulkDeleteBtn" type="button"
+            disabled>
+            <span class="trash-icon" aria-hidden="true"></span>
+            <span class="d-none d-sm-inline">Borrar</span>
+          </button>
+        </div>
+        <div class="appointment-list flex-grow-1" id="appointmentsTableBody" style="overflow-y: auto;">
+          {% for c in appointments %}
+          <div class="appointment-card" data-appointment-id="{{ c.id }}">
+            <div class="form-check m-0">
+              <input type="checkbox" class="form-check-input appointment-check" value="{{ c.id }}"
+                style="width: 1.2rem; height: 1.2rem; border-color: #d1c4e9;">
+            </div>
+            <div class="flex-grow-1">
+              <div class="d-flex justify-content-between align-items-start mb-1">
+                <div class="app-title text-truncate" style="max-width: 160px;" title="{{ c.title }}">{{ c.title }}</div>
+                <span class="status-badge status-{{ c.status|default('programada') }}"
+                  style="font-size:0.65rem; padding: 0.1rem 0.4rem;">
+                  {{ appointment_status_labels[c.status]|default(c.status|capitalize) }}
+                </span>
+              </div>
+              <div class="app-time">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+                <span class="appointment-date opacity-0 transition-opacity" data-datetime="{{ c.start_time }}">{{
+                  (c.start_time|string)[:10] }}</span>
+                <span class="text-muted mx-1">•</span>
+                <span class="appointment-hour opacity-0 transition-opacity" data-datetime="{{ c.start_time }}">{{
+                  (c.start_time|string)[11:16] }}</span>
+              </div>
+            </div>
+            <div class="d-flex flex-column gap-1">
+              <button class="btn-icon-soft primary" type="button"
+                onclick="openEdit({{ c.id }}, '{{ c.title|escape }}', '{{ c.description|default('', true)|escape }}', '{{ c.start_time }}', '{{ c.end_time }}', '{{ c.status|default('programada') }}')"
+                title="Editar">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 20h9" />
+                  <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                </svg>
+              </button>
+              <form action="/calendar/{{ c.id }}/delete" method="post" class="m-0">
+                <button class="btn-icon-soft danger" type="submit" title="Eliminar">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              </form>
+            </div>
+          </div>
+          {% else %}
+          <div class="text-center text-muted py-5">
+            <div class="mb-2 opacity-50">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+              </svg>
+            </div>
+            <div class="small fw-semibold">Sin citas programadas</div>
+            <div class="small opacity-75">para este periodo</div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,69 @@
+services:
+  web:
+    image: erifcamp/flow-panel:v1.0.0
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      # DB (apunta al servicio `db`)
+      - POSTGRES_DSN=postgresql://admin:admin123@db:5432/rag_panel
+      - DB_SCHEMA=vetbot
+      - CORE_SCHEMA=vetflow_core
+      - WORKSPACE_SCHEMA_PREFIX=ws
+
+      # Azure Blob Storage
+      - AZURE_BLOB_CONN_STR=${AZURE_STORAGE_KEY}
+      - AZURE_BLOB_CONTAINER=uploads
+
+      # Webhooks n8n (RAG/archivos)
+      - N8N_WEBHOOK_URL=http://localhost:5678/webhook-test/rag-files
+      - N8N_DELETE_WEBHOOK_URL=http://localhost:5678/webhook-test/rag-files-deleted
+      - N8N_NEW_WORKSPACE_WEBHOOK_URL=
+
+      # Evolution API (WhatsApp)
+      - EVOLUTION_API_BASE_URL=https://evolution.eflowdomain.cloud
+      - EVOLUTION_API_KEY={}
+      - EVOLUTION_API_INTEGRATION=WHATSAPP-BAILEYS
+      - EVOLUTION_RABBITMQ_ENABLED=1
+      # - EVOLUTION_RABBITMQ_EVENTS=
+      
+      # App Settings
+      - API_HOST=0.0.0.0
+      - API_PORT=5000
+      - APP_TIMEZONE=UTC
+      - LOG_LEVEL=INFO
+      - FLASK_SECRET_KEY=dev-secret
+      - CORS_ALLOWED_ORIGINS=http://*:5173
+      - AUTO_CREATE_DEFAULT_WORKSPACE=0
+      - DEFAULT_OWNER_EMAIL=demo@vetflow.local
+      - DEFAULT_OWNER_NAME=Demo Vetflow
+
+      # Clerk (opcional)
+      - VITE_CLERK_PUBLISHABLE_KEY={}
+      - CLERK_PUBLISHABLE_KEY={}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin123
+      - POSTGRES_DB=rag_panel
+    ports:
+      - "5433:5432" # evita choque con Postgres local
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Initialize schema automatically
+      - ./schema.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB} -h 127.0.0.1 -p 5432"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

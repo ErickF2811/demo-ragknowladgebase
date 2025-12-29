@@ -1,0 +1,116 @@
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+      <div>
+        <h5 class="card-title mb-1">Integración WhatsApp</h5>
+        <p class="section-subtitle mb-0">
+          Genera el QR desde Evolution API para vincular WhatsApp (Baileys) a este workspace.
+        </p>
+      </div>
+      <div class="d-flex gap-2">
+        <button id="whatsappRefreshStatusBtn" class="btn btn-outline-secondary" type="button" {% if not current_workspace %}disabled{% endif %}>
+          Actualizar estado
+        </button>
+        <button id="whatsappFetchQrBtn" class="btn btn-primary" type="button" {% if not current_workspace %}disabled{% endif %}>
+          Generar QR
+        </button>
+        <button id="whatsappLogoutBtn" class="btn btn-outline-danger" type="button" style="display:none;" {% if not current_workspace %}disabled{% endif %}>
+          cerrar session whatapp
+        </button>
+      </div>
+    </div>
+
+    <hr class="my-4" />
+
+    <div id="whatsappPanel" data-workspace-slug="{{ current_workspace.schema_name if current_workspace else '' }}">
+      <div class="modal fade" id="whatsappLogoutModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">cerrar session whatapp</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <p class="mb-2">¿Seguro que deseas cerrar session whatapp para este workspace?</p>
+              <div class="small text-muted">
+                Esto desconectará el dispositivo y deberás generar un nuevo QR para volver a vincular.
+              </div>
+              <div class="alert alert-danger mt-3 d-none" id="whatsappLogoutError" role="alert"></div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+              <button type="button" class="btn btn-danger" id="whatsappLogoutConfirmBtn">cerrar session</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-4 align-items-start">
+        <div class="col-lg-6">
+          <div class="p-3 rounded-4 border bg-light-subtle">
+            <div class="small text-muted mb-2">Pasos</div>
+            <ol class="mb-0">
+              <li>Abre WhatsApp en tu teléfono</li>
+              <li>Dispositivos vinculados → Vincular un dispositivo</li>
+              <li>Escanea el QR que aparece aquí</li>
+            </ol>
+          </div>
+
+          <div class="mt-3 small text-muted">
+            Instancia:
+            <span class="fw-semibold" id="whatsappInstanceName">{{ current_workspace.schema_name if current_workspace else '-' }}</span>
+          </div>
+          <div class="small" id="whatsappStatus" aria-live="polite"></div>
+          <div class="small text-muted mt-2" id="whatsappDetails" style="display:none;"></div>
+          <div class="small text-muted mt-2" id="whatsappLastCheck" style="display:none;"></div>
+        </div>
+
+        <div class="col-lg-6">
+          <div
+            id="whatsappQrCard"
+            class="p-3 rounded-4 border d-flex align-items-center justify-content-center"
+            style="min-height: 320px; background: #fff; display:none;"
+            hidden
+          >
+            <div class="text-center">
+              <div id="whatsappQrLoading" class="text-muted" style="display:none;">
+                <div class="spinner-border text-primary" role="status" aria-label="Cargando"></div>
+                <div class="small mt-2">Generando QR...</div>
+              </div>
+              <img id="whatsappQrImg" alt="QR WhatsApp" style="max-width: 280px; width: 100%; display:none;" />
+              <div id="whatsappQrPlaceholder" class="text-muted">
+                Pulsa “Generar QR” para mostrar el código.
+              </div>
+            </div>
+          </div>
+
+          <div id="whatsappConnectedCard" class="p-3 rounded-4 border" style="min-height: 320px; background: #fff; display:none;" hidden>
+            <div class="d-flex justify-content-between align-items-start gap-2">
+              <div>
+                <div class="fw-semibold">Conexión activa</div>
+                <div class="small text-muted">Este workspace ya tiene WhatsApp vinculado.</div>
+              </div>
+              <span class="badge bg-success">Conectado</span>
+            </div>
+
+            <hr class="my-3" />
+            <div class="small text-muted mb-1">Detalles</div>
+            <div class="small" id="whatsappConnectionInfo">—</div>
+
+            <div class="mt-3">
+              <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#whatsappRawStatusCollapse" aria-expanded="false">
+                Ver respuesta completa
+              </button>
+              <div class="collapse mt-2" id="whatsappRawStatusCollapse">
+                <pre class="small p-2 rounded-3 border bg-light-subtle mb-0" style="white-space: pre-wrap;" id="whatsappRawStatus">—</pre>
+              </div>
+            </div>
+          </div>
+          <div class="small text-muted mt-2">
+            Si el QR expira, vuelve a generarlo. Revisa que `EVOLUTION_API_BASE_URL` y `EVOLUTION_API_KEY` estén configuradas.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

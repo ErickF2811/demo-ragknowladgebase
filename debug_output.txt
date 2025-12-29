@@ -1,0 +1,9 @@
+--- USERS ---
+{'id': UUID('09d75309-4dea-43d0-915c-95370a030051'), 'clerk_id': None, 'email': 'erickf2811@gmail.com', 'display_name': 'Erickf Flores', 'avatar_url': None, 'created_at': datetime.datetime(2025, 12, 21, 0, 55, 35, 324269, tzinfo=zoneinfo.ZoneInfo(key='Etc/UTC'))}
+{'id': UUID('9da3fbe4-4551-404a-9b2a-bec8fb7f937f'), 'clerk_id': None, 'email': 'erifcamp@fiec.espol.edu.ec', 'display_name': 'Erick David Flores Campana', 'avatar_url': None, 'created_at': datetime.datetime(2025, 12, 21, 1, 44, 57, 934739, tzinfo=zoneinfo.ZoneInfo(key='Etc/UTC'))}
+
+--- WORKSPACES ---
+{'id': UUID('075c2621-b407-4368-a8ba-cfa76e7cac99'), 'name': 'veterianaria1', 'slug': 'veterianaria1', 'schema_name': 'ws_veterianaria1_dfb7', 'description': 'Este es un espacio de trabajo para  veterinaria', 'theme_color': '#6c47ff', 'icon_url': None, 'owner_id': UUID('09d75309-4dea-43d0-915c-95370a030051'), 'created_at': datetime.datetime(2025, 12, 21, 1, 2, 15, 814881, tzinfo=zoneinfo.ZoneInfo(key='Etc/UTC')), 'updated_at': datetime.datetime(2025, 12, 21, 1, 2, 15, 814881, tzinfo=zoneinfo.ZoneInfo(key='Etc/UTC'))}
+
+--- MEMBERS ---
+{'workspace_id': UUID('075c2621-b407-4368-a8ba-cfa76e7cac99'), 'user_id': UUID('09d75309-4dea-43d0-915c-95370a030051'), 'role': 'owner', 'joined_at': datetime.datetime(2025, 12, 21, 1, 2, 15, 814881, tzinfo=zoneinfo.ZoneInfo(key='Etc/UTC'))}
