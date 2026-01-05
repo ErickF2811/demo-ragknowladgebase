@@ -13,31 +13,69 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
   <style>
     :root {
+      /* Brand Palette */
       --vet-primary: #6f3df4;
+      --vet-primary-hover: #5b2bd1;
       --vet-primary-strong: #4e22c8;
       --vet-accent: #f472b6;
-      --vet-ink: #1c1233;
-      --vet-surface: #f8f5ff;
+
+      /* Semantic - Light Mode Defaults */
+      --vet-bg-app: #f5f0ff;
+      --vet-bg-surface: #ffffff;
+      --vet-bg-surface-translucent: rgba(255, 255, 255, 0.75);
+      --vet-bg-subtle: #f8f5ff;
+      --vet-bg-input: #ffffff;
+
+      --vet-text-main: #1c1233;
+      --vet-text-secondary: #4b5563;
+      --vet-text-muted: #8b7ccf;
+
       --vet-border: #e3d7ff;
+      --vet-border-light: rgba(111, 61, 244, 0.15);
+
+      --vet-shadow-sm: 0 10px 40px rgba(15, 23, 42, 0.08);
+      --vet-shadow-md: 0 15px 40px rgba(15, 23, 42, 0.08);
+    }
+
+    [data-theme="dark"] {
+      --vet-primary: #8b5cf6;
+      --vet-primary-hover: #a78bfa;
+      --vet-primary-strong: #c4b5fd;
+
+      --vet-bg-app: #0b0f19;
+      --vet-bg-surface: #151b2b;
+      --vet-bg-surface-translucent: rgba(21, 27, 43, 0.85);
+      --vet-bg-subtle: #1e2538;
+      --vet-bg-input: #0f1623;
+
+      --vet-text-main: #f3f4f6;
+      --vet-text-secondary: #d1d5db;
+      --vet-text-muted: #9ca3af;
+
+      --vet-border: #2d3748;
+      --vet-border-light: rgba(255, 255, 255, 0.12);
+
+      --vet-shadow-sm: 0 10px 40px rgba(0, 0, 0, 0.3);
+      --vet-shadow-md: 0 15px 40px rgba(0, 0, 0, 0.4);
     }
 
     body {
       font-family: 'Manrope', 'Segoe UI', system-ui, -apple-system, sans-serif;
-      background:
-        radial-gradient(1200px at 10% 10%, #f2e7ff, transparent 50%),
-        radial-gradient(900px at 80% 10%, #ffe4fa, transparent 55%),
-        #f5f0ff;
-      color: var(--vet-ink);
+      background-color: var(--vet-bg-app);
+      background-image:
+        radial-gradient(1200px at 10% 10%, var(--vet-border-light), transparent 50%),
+        radial-gradient(900px at 80% 10%, var(--vet-border-light), transparent 55%);
+      color: var(--vet-text-main);
       min-height: 100vh;
       margin: 0;
+      transition: background-color 0.3s ease, color 0.3s ease;
     }
 
     .app-shell {
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      backdrop-filter: blur(8px);
-      overflow-x: hidden;
+      /* backdrop-filter and overflow-x moved/removed to fix sticky/fixed positioning */
     }
 
     .panel-container {
@@ -56,10 +94,33 @@
       justify-content: space-between;
       align-items: center;
       padding: 1rem 2.5rem;
-      background: rgba(255, 255, 255, 0.75);
-      border-bottom: 1px solid rgba(124, 58, 237, 0.15);
-      box-shadow: 0 10px 40px rgba(15, 23, 42, 0.08);
+      background: var(--vet-bg-surface-translucent);
+      border-bottom: 1px solid var(--vet-border-light);
+      box-shadow: var(--vet-shadow-sm);
       backdrop-filter: blur(12px);
+    }
+
+    /* Global Dark Mode Overrides for Bootstrap Components */
+    .dropdown-menu {
+      background-color: var(--vet-bg-surface);
+      border-color: var(--vet-border-light);
+      box-shadow: var(--vet-shadow-md);
+    }
+
+    .dropdown-item {
+      color: var(--vet-text-main);
+    }
+
+    .dropdown-item:hover,
+    .dropdown-item:focus {
+      background-color: var(--vet-bg-subtle);
+      color: var(--vet-primary);
+    }
+
+    .card {
+      background-color: var(--vet-bg-surface);
+      border-color: var(--vet-border-light);
+      color: var(--vet-text-main);
     }
 
     .vetflow-brand {
@@ -77,7 +138,7 @@
       height: 12px;
       border-radius: 50%;
       background: var(--vet-primary);
-      box-shadow: 0 0 0 6px rgba(111, 61, 244, 0.18);
+      box-shadow: 0 0 0 6px var(--vet-border-light);
     }
 
     .vetflow-session {
@@ -86,30 +147,49 @@
       gap: 1rem;
     }
 
+    .theme-toggle-btn {
+      background: transparent;
+      border: 1px solid var(--vet-border-light);
+      color: var(--vet-text-main);
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .theme-toggle-btn:hover {
+      background: var(--vet-bg-subtle);
+      color: var(--vet-primary);
+    }
+
     #clerk-user-name {
       font-weight: 600;
       color: var(--vet-primary-strong);
     }
 
     .user-role-card {
-      background: #f4edff;
+      background: var(--vet-bg-subtle);
       border-radius: 999px;
       padding: 0.35rem 0.9rem;
       display: flex;
       align-items: center;
       gap: 0.4rem;
-      border: 1px solid rgba(111, 61, 244, 0.15);
+      border: 1px solid var(--vet-border-light);
       font-size: 0.8rem;
       font-weight: 600;
-      color: var(--vet-primary-strong);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+      color: var(--vet-primary);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
     }
 
     .user-role-card small {
       text-transform: uppercase;
       letter-spacing: 0.05em;
       font-size: 0.7rem;
-      color: #8573c7;
+      color: var(--vet-text-muted);
     }
 
     .refresh-pill {
@@ -117,7 +197,7 @@
       border: 0;
       padding: 0.55rem 1.4rem;
       font-weight: 700;
-      background: var(--vet-ink);
+      background: var(--vet-text-main);
       color: #fff;
       box-shadow: 0 12px 20px rgba(28, 18, 51, 0.2);
       transition: transform 0.15s ease, box-shadow 0.15s ease;
@@ -130,18 +210,18 @@
 
     .logout-pill {
       border-radius: 999px;
-      border: 1px solid rgba(111, 61, 244, 0.35);
+      border: 1px solid var(--vet-border-light);
       padding: 0.45rem 1.1rem;
       font-weight: 600;
-      background: rgba(255, 255, 255, 0.9);
-      color: var(--vet-primary-strong);
-      box-shadow: 0 8px 24px rgba(28, 18, 51, 0.12);
-      transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+      background: var(--vet-bg-surface);
+      color: var(--vet-primary);
+      box-shadow: 0 8px 24px var(--vet-shadow-sm);
+      transition: all 0.2s ease;
     }
 
     .logout-pill:hover {
-      background: #ede7ff;
-      box-shadow: 0 12px 26px rgba(28, 18, 51, 0.2);
+      background: var(--vet-bg-subtle);
+      box-shadow: 0 12px 26px var(--vet-shadow-sm);
       transform: translateY(-1px);
     }
 
@@ -166,19 +246,24 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: linear-gradient(120deg, #f8f4ff, #fef6ff);
+      background: var(--vet-bg-surface);
       border-radius: 18px;
       padding: 1.25rem clamp(1rem, 4vw, 2rem);
-      border: 1px solid rgba(111, 61, 244, 0.08);
+      border: 1px solid var(--vet-border-light);
+      position: sticky;
+      top: 80px;
+      /* Offset for main nav */
+      z-index: 40;
+      box-shadow: var(--vet-shadow-sm);
     }
 
     .btn-icon-circle {
       width: 36px;
       height: 36px;
       border-radius: 50%;
-      border: 1px solid rgba(124, 58, 237, 0.2);
-      background: #fff;
-      color: #4338ca;
+      border: 1px solid var(--vet-border-light);
+      background: var(--vet-bg-surface);
+      color: var(--vet-primary);
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -189,12 +274,12 @@
 
     .btn-icon-circle:hover {
       transform: translateY(-1px);
-      border-color: rgba(124, 58, 237, 0.35);
+      border-color: var(--vet-primary);
       box-shadow: 0 10px 20px rgba(67, 56, 202, 0.18);
     }
 
     .btn-icon-circle:focus-visible {
-      outline: 2px solid rgba(124, 58, 237, 0.45);
+      outline: 2px solid var(--vet-primary);
       outline-offset: 2px;
     }
 
@@ -208,7 +293,7 @@
       font-size: 0.75rem;
       font-weight: 600;
       letter-spacing: 0.08em;
-      color: #5b4ab8;
+      color: var(--vet-text-muted);
       text-transform: uppercase;
     }
 
@@ -222,12 +307,12 @@
       font-family: 'Lexend', sans-serif;
       font-weight: 700;
       font-size: 1.05rem;
-      color: #4e22c8;
+      color: var(--vet-primary-strong);
     }
 
     .calendar-current-meta {
       font-weight: 600;
-      color: #8b7ccf;
+      color: var(--vet-text-muted);
       letter-spacing: 0.05em;
     }
 
@@ -237,7 +322,7 @@
       font-family: 'Lexend', sans-serif;
       font-size: clamp(1.35rem, 3vw, 1.8rem);
       font-weight: 800;
-      color: #3c1b8f;
+      color: var(--vet-primary-strong);
       letter-spacing: 0.06em;
       text-transform: capitalize;
     }
@@ -250,26 +335,26 @@
     }
 
     .calendar-cell {
-      background: linear-gradient(180deg, rgba(111, 61, 244, 0.03), #fff);
+      background: var(--vet-bg-surface);
       border-radius: 18px;
-      border: 1px solid rgba(111, 61, 244, 0.08);
+      border: 1px solid var(--vet-border-light);
       padding: 0.85rem;
       min-height: 180px;
-      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+      box-shadow: var(--vet-shadow-sm);
       position: relative;
       transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease, background 120ms ease;
     }
 
     .calendar-cell:hover {
       transform: translateY(-2px);
-      border-color: rgba(111, 61, 244, 0.35);
-      background: linear-gradient(180deg, rgba(111, 61, 244, 0.04), #fff);
-      box-shadow: 0 14px 32px rgba(15, 23, 42, 0.12);
+      border-color: var(--vet-primary);
+      background: var(--vet-bg-subtle);
+      box-shadow: var(--vet-shadow-md);
     }
 
     .calendar-cell.outside-month {
       opacity: 0.45;
-      background: rgba(248, 244, 255, 0.7);
+      background: var(--vet-bg-subtle);
     }
 
     .calendar-day {
@@ -283,8 +368,8 @@
       padding: 0.2rem 0.6rem;
       font-size: 0.75rem;
       font-weight: 600;
-      color: #6f3df4;
-      background: rgba(111, 61, 244, 0.15);
+      color: var(--vet-primary);
+      background: var(--vet-border-light);
       margin-top: 0.35rem;
       white-space: nowrap;
       overflow: hidden;
@@ -293,9 +378,9 @@
 
     .timeline-wrapper {
       border-radius: 20px;
-      border: 1px solid rgba(111, 61, 244, 0.12);
-      background: #fff;
-      box-shadow: 0 15px 40px rgba(15, 23, 42, 0.08);
+      border: 1px solid var(--vet-border-light);
+      background: var(--vet-bg-surface);
+      box-shadow: var(--vet-shadow-sm);
       position: relative;
       padding: 0;
       width: 100%;
@@ -304,8 +389,8 @@
 
     .timeline-header {
       display: grid;
-      border-bottom: 1px solid rgba(111, 61, 244, 0.08);
-      background: linear-gradient(120deg, rgba(111, 61, 244, 0.08), rgba(111, 61, 244, 0.02));
+      border-bottom: 1px solid var(--vet-border-light);
+      background: var(--vet-bg-subtle);
       padding: 0;
     }
 
@@ -313,7 +398,7 @@
       font-size: 0.8rem;
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      color: #7b6ae4;
+      color: var(--vet-text-muted);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -324,13 +409,14 @@
       font-size: 0.75rem;
       font-weight: 700;
       padding-top: 2px;
+      color: var(--vet-text-muted);
       /* Optical alignment with number */
     }
 
     .timeline-day-number {
       font-size: 1.1rem;
       font-weight: 700;
-      color: #4a2c91;
+      color: var(--vet-primary-strong);
     }
 
     /* Oculta el label de nombre del dia en vistas semana/dia */
@@ -350,10 +436,10 @@
     .timeline-body {
       display: grid;
       position: relative;
-      background: #fbf9ff;
+      background: var(--vet-bg-surface);
       background-image:
-        linear-gradient(#ede9fe 1px, transparent 1px),
-        linear-gradient(90deg, rgba(111, 61, 244, 0.04) 1px, transparent 1px);
+        linear-gradient(var(--vet-border-light) 1px, transparent 1px),
+        linear-gradient(90deg, var(--vet-border-light) 1px, transparent 1px);
       background-size: 100% 32px, 120px 100%;
       pointer-events: auto;
       padding: 0;
@@ -365,15 +451,15 @@
 
     .timeline-hour {
       font-size: 0.75rem;
-      color: #9ca3af;
-      border-bottom: 1px solid rgba(111, 61, 244, 0.08);
+      color: var(--vet-text-muted);
+      border-bottom: 1px solid var(--vet-border-light);
       padding: 0.2rem 0.4rem;
       text-align: right;
     }
 
     .time-slot {
-      border-bottom: 1px solid rgba(111, 61, 244, 0.08);
-      border-left: 1px solid rgba(111, 61, 244, 0.05);
+      border-bottom: 1px solid var(--vet-border-light);
+      border-left: 1px solid var(--vet-border-light);
     }
 
     .time-slot:nth-child(odd) {
@@ -389,7 +475,7 @@
       display: flex;
       flex-direction: column;
       gap: 0.2rem;
-      background: linear-gradient(135deg, #6f3df4, #a855f7);
+      background: linear-gradient(135deg, var(--vet-primary), var(--vet-primary-hover));
       box-shadow: 0 15px 25px rgba(111, 61, 244, 0.35);
       transition: transform 120ms ease, box-shadow 120ms ease;
       cursor: move;
@@ -400,7 +486,7 @@
 
     .event-block:hover {
       transform: translateY(-2px);
-      box-shadow: 0 18px 28px rgba(15, 23, 42, 0.22);
+      box-shadow: 0 18px 28px var(--vet-shadow-md);
     }
 
     .event-block-time {
@@ -435,13 +521,13 @@
     }
 
     .slot-selected {
-      background: rgba(111, 61, 244, 0.18) !important;
+      background: var(--vet-border-light) !important;
     }
 
     .current-time-indicator {
       position: absolute;
       height: 2px;
-      background: #ff7ab8;
+      background: var(--vet-accent);
       display: flex;
       align-items: center;
       z-index: 10;
@@ -451,7 +537,7 @@
       width: 10px;
       height: 10px;
       border-radius: 999px;
-      background: #ff7ab8;
+      background: var(--vet-accent);
       position: absolute;
       top: -4px;
     }
@@ -508,7 +594,9 @@
 
     .modal-content {
       border-radius: 18px;
-      box-shadow: 0 18px 38px rgba(15, 23, 42, 0.22);
+      box-shadow: var(--vet-shadow-md);
+      background: var(--vet-bg-surface);
+      border: 1px solid var(--vet-border-light);
     }
 
     .modal-backdrop.show {
@@ -933,6 +1021,25 @@
       opacity: 0.18;
       border-radius: 1px;
     }
+
+    .appointment-card {
+      background: var(--vet-bg-surface);
+      border: 1px solid var(--vet-border-light);
+      border-radius: 16px;
+      padding: 0.85rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      transition: all 0.2s ease;
+    }
+
+    .appointment-card:hover {
+      background: var(--vet-bg-subtle);
+      border-color: var(--vet-primary);
+      transform: translateY(-1px);
+      box-shadow: var(--vet-shadow-sm);
+    }
   </style>
   {% block head %}{% endblock %}
 </head>
@@ -948,6 +1055,9 @@
         </div>
       </div>
       <div class="vetflow-session">
+        <button class="theme-toggle-btn me-2" id="theme-toggle-btn" title="Alternar modo oscuro">
+          <!-- Icon will be injected by JS -->
+        </button>
         <div class="user-role-card">
           <small>Rol:</small>
           <span id="clerk-role-pill">{{ current_user_role or 'Invitado' }}</span>
@@ -982,6 +1092,8 @@
     </script>
   <script src="{{ url_for('static', filename='js/clerk-init.js') }}?v=3"></script>
   {% endif %}
+
+  <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
   {% block scripts %}{% endblock %}
 </body>
 

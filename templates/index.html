@@ -3,18 +3,21 @@
 {% block head %}
 {{ super() }}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css">
+
+
 <style>
   .page-shell {
     display: flex;
     align-items: flex-start;
-    overflow: hidden;
+    /* overflow: hidden; Removed to allow sticky descendants */
     width: 100%;
   }
 
   .side-nav {
     width: 260px;
-    background: rgba(255, 255, 255, 0.97);
-    border: 1px solid rgba(111, 61, 244, 0.12);
+    background: var(--vet-bg-surface-translucent);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--vet-border-light);
     border-radius: 16px;
     padding: 1rem;
     box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
@@ -53,7 +56,7 @@
     align-items: center;
     justify-content: center;
     border: 1px solid rgba(111, 61, 244, 0.2);
-    background: #fff;
+    background: var(--vet-bg-surface);
     border-radius: 12px;
     padding: 0.45rem 0.75rem;
     font-weight: 700;
@@ -90,7 +93,7 @@
     border-radius: 10px;
     font-weight: 600;
     font-size: 1rem;
-    color: #4b5563;
+    color: var(--vet-text-secondary);
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -102,13 +105,14 @@
   }
 
   .side-link:hover {
-    background: rgba(111, 61, 244, 0.08);
-    color: var(--vet-primary-strong);
+    background: var(--vet-bg-subtle);
+    color: var(--vet-primary);
   }
 
   .side-link.active {
-    background: rgba(111, 61, 244, 0.12);
-    color: var(--vet-primary-strong);
+    background: var(--vet-primary);
+    color: #fff;
+    box-shadow: 0 4px 12px var(--vet-shadow-sm);
   }
 
   .side-nav .dropdown-toggle::after {
@@ -250,41 +254,47 @@
     --fc-neutral-bg-color: rgba(111, 61, 244, 0.04);
     --fc-event-border-color: transparent;
   }
+
   #fullCalendarRoot .fc .fc-toolbar-title {
     font-family: 'Lexend', sans-serif;
     font-weight: 800;
     color: #2b1a66;
   }
+
   #fullCalendarRoot .fc .fc-button {
     border-radius: 999px;
     border-color: rgba(111, 61, 244, 0.25);
   }
+
   #fullCalendarRoot .fc .fc-button-primary {
     background: rgba(111, 61, 244, 0.1);
     border-color: rgba(111, 61, 244, 0.25);
     color: #4e22c8;
   }
+
   #fullCalendarRoot .fc .fc-button-primary:not(:disabled).fc-button-active,
   #fullCalendarRoot .fc .fc-button-primary:not(:disabled):active {
     background: rgba(111, 61, 244, 0.2);
     border-color: rgba(111, 61, 244, 0.35);
     color: #3b1aa0;
   }
+
   #fullCalendarRoot .fc .fc-button:focus {
     box-shadow: 0 0 0 0.2rem rgba(111, 61, 244, 0.2);
   }
+
   #fullCalendarRoot .fc .fc-event {
     border-radius: 12px;
     padding: 2px 4px;
     box-shadow: 0 8px 18px rgba(111, 61, 244, 0.12);
   }
+
   #fullCalendarRoot .fc .fc-col-header-cell-cushion,
   #fullCalendarRoot .fc .fc-daygrid-day-number {
     color: #4b5563;
     text-decoration: none;
     font-weight: 600;
   }
-
 </style>
 {% endblock %}
 
@@ -345,7 +355,8 @@
     <button class="side-link" data-tab-target="clients">Gestionar clientes</button>
     <button class="side-link" data-tab-target="whatsapp">Integración WhatsApp</button>
     {% if current_workspace %}
-    <a class="side-link" href="{{ url_for('ui.workspace_by_slug', slug=current_workspace.schema_name) }}">Resumen workspace</a>
+    <a class="side-link" href="{{ url_for('ui.workspace_by_slug', slug=current_workspace.schema_name) }}">Resumen
+      workspace</a>
     {% endif %}
   </aside>
   <div class="side-overlay" id="sideOverlay"></div>
@@ -527,38 +538,38 @@
             <textarea class="form-control" id="eventDescInput" rows="2"
               placeholder="Agregar descripcion o notas"></textarea>
           </div>
-           <div class="quick-event-row">
-             <div class="quick-event-icon" aria-hidden="true">
-               <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                 <circle cx="12" cy="12" r="7" />
-                 <circle cx="12" cy="12" r="3" />
-                 <path d="M12 5v2" />
-                 <path d="M12 17v2" />
-                 <path d="M5 12h2" />
-                 <path d="M17 12h2" />
-               </svg>
-             </div>
-             <select class="form-select" id="eventStatusSelect">
-               {% for status in appointment_statuses %}
-               <option value="{{ status.value }}">{{ status.label }}</option>
-               {% endfor %}
-             </select>
-           </div>
-           <div class="quick-event-row">
-             <div class="quick-event-icon" aria-hidden="true">
-               <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                 <path d="M20 21a8 8 0 0 0-16 0" />
-                 <circle cx="12" cy="9" r="4" />
-               </svg>
-             </div>
-             <select class="form-select" id="eventClientSelect">
-               <option value="">Cliente (opcional)</option>
-             </select>
-           </div>
-         </div>
-         <div class="modal-footer border-0 pt-0 flex-column flex-sm-row gap-2 justify-content-between align-items-start">
-           <div class="text-muted small" id="eventRangeLabel"></div>
-           <div class="d-flex gap-2 w-100 justify-content-sm-end">
+          <div class="quick-event-row">
+            <div class="quick-event-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="7" />
+                <circle cx="12" cy="12" r="3" />
+                <path d="M12 5v2" />
+                <path d="M12 17v2" />
+                <path d="M5 12h2" />
+                <path d="M17 12h2" />
+              </svg>
+            </div>
+            <select class="form-select" id="eventStatusSelect">
+              {% for status in appointment_statuses %}
+              <option value="{{ status.value }}">{{ status.label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="quick-event-row">
+            <div class="quick-event-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21a8 8 0 0 0-16 0" />
+                <circle cx="12" cy="9" r="4" />
+              </svg>
+            </div>
+            <select class="form-select" id="eventClientSelect">
+              <option value="">Cliente (opcional)</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0 flex-column flex-sm-row gap-2 justify-content-between align-items-start">
+          <div class="text-muted small" id="eventRangeLabel"></div>
+          <div class="d-flex gap-2 w-100 justify-content-sm-end">
             <button type="button" class="btn btn-light flex-fill flex-sm-grow-0"
               data-bs-dismiss="modal">Cancelar</button>
             <button type="submit" class="btn btn-primary flex-fill flex-sm-grow-0">Crear</button>
@@ -634,7 +645,8 @@
           </div>
           <div class="mb-3">
             <label class="form-label">Duracion del enlace (dias, opcional)</label>
-            <input type="number" class="form-control" name="invite_expires" min="0" max="365" placeholder="Sin vencimiento">
+            <input type="number" class="form-control" name="invite_expires" min="0" max="365"
+              placeholder="Sin vencimiento">
             <div class="form-text">Deja vacio o 0 para que no expire.</div>
           </div>
           <div class="alert alert-info small mb-2">
@@ -644,10 +656,10 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button>
-      <button type="submit" class="btn btn-primary">Enviar invitacion</button>
+          <button type="submit" class="btn btn-primary">Enviar invitacion</button>
+        </div>
+      </form>
     </div>
-  </form>
-</div>
   </div>
 </div>
 
@@ -667,8 +679,8 @@
           </div>
           <div class="mb-3">
             <label class="form-label">Tu correo</label>
-            <input type="email" class="form-control" name="invite_email" required
-              placeholder="tu-correo@clinica.com" value="{{ current_user_email or '' }}">
+            <input type="email" class="form-control" name="invite_email" required placeholder="tu-correo@clinica.com"
+              value="{{ current_user_email or '' }}">
           </div>
           <div class="mb-3">
             <label class="form-label">Tu nombre (opcional)</label>
@@ -697,11 +709,11 @@
         <h5 class="modal-title">Miembros del workspace</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-        <div class="modal-body">
-          {% if workspace_members %}
-          <div class="table-responsive">
-            <table class="table align-middle">
-              <thead>
+      <div class="modal-body">
+        {% if workspace_members %}
+        <div class="table-responsive">
+          <table class="table align-middle">
+            <thead>
               <tr>
                 <th>Correo</th>
                 <th>Nombre</th>
@@ -716,7 +728,8 @@
                 <td>{{ m.email }}</td>
                 <td>{{ m.display_name or 'Sin nombre' }}</td>
                 <td>
-                  <span class="badge {% if m.role == 'owner' %}bg-primary{% elif m.role == 'admin' %}bg-info{% else %}bg-secondary{% endif %}">
+                  <span
+                    class="badge {% if m.role == 'owner' %}bg-primary{% elif m.role == 'admin' %}bg-info{% else %}bg-secondary{% endif %}">
                     {{ m.role|capitalize }}
                   </span>
                 </td>
@@ -734,17 +747,17 @@
             </tbody>
           </table>
         </div>
-          {% else %}
-          <div class="alert alert-light mb-0">
-            No hay miembros cargados para este workspace.
-          </div>
-          {% endif %}
-          <div id="membersRemoveStatus" class="small fw-semibold mt-2"></div>
+        {% else %}
+        <div class="alert alert-light mb-0">
+          No hay miembros cargados para este workspace.
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button>
-        </div>
+        {% endif %}
+        <div id="membersRemoveStatus" class="small fw-semibold mt-2"></div>
       </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -796,17 +809,15 @@
   window.vetflowStatuses = {{ appointment_statuses | tojson }};
   window.vetflowStatusLabels = {{ appointment_status_labels | tojson }};
 </script>
- <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
- <script src="{{ url_for('static', filename='js/calendar.js') }}?v=12"></script>
- <script src="{{ url_for('static', filename='js/fullcalendar.js') }}?v=10"></script>
- <script src="{{ url_for('static', filename='js/whatsapp.js') }}?v=26"></script>
- <script src="{{ url_for('static', filename='js/clientes.js') }}?v=2"></script>
- <script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+<script src="{{ url_for('static', filename='js/calendar.js') }}?v=12"></script>
+<script src="{{ url_for('static', filename='js/fullcalendar.js') }}?v=10"></script>
+<script src="{{ url_for('static', filename='js/whatsapp.js') }}?v=26"></script>
+<script src="{{ url_for('static', filename='js/clientes.js') }}?v=2"></script>
+<script>
   document.addEventListener('DOMContentLoaded', () => {
     if (window.__renderCalendar) {
-      try { window.__renderCalendar(); } catch (err) { console.error('Error renderCalendar inline', err); }
-    } else {
-      console.error('calendar.js no inicializo');
+      try { window.__renderCalendar(); } catch (err) { console.warn('Legacy calendar render error', err); }
     }
 
     const sideNav = document.getElementById('sideNav');

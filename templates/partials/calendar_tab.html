@@ -1,7 +1,7 @@
 <div class="row g-3 flex-lg-nowrap align-items-stretch">
   <div class="col-lg calendar-col" style="min-width: 0;">
     <div class="card h-100">
-      <div class="card-body" style="overflow-x: auto;">
+      <div class="card-body">
         <div class="calendar-app-toolbar flex-wrap gap-3">
           <div class="calendar-toolbar-left d-flex align-items-center gap-2">
             <button class="btn btn-outline-light btn-icon-circle" id="prevMonth" aria-label="Anterior">
@@ -35,9 +35,11 @@
             </button>
           </div>
         </div>
-        <div class="calendar-surface mt-2 position-relative" id="calendarSurface"
-          data-workspace-slug="{{ current_workspace.schema_name if current_workspace else '' }}">
-          <div id="fullCalendarRoot" class="mt-2" style="min-height: 650px;"></div>
+        <div style="overflow-x: auto;">
+          <div class="calendar-surface mt-2 position-relative" id="calendarSurface"
+            data-workspace-slug="{{ current_workspace.schema_name if current_workspace else '' }}">
+            <div id="fullCalendarRoot" class="mt-2" style="min-height: 650px;"></div>
+          </div>
         </div>
       </div>
     </div>
