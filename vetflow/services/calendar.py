@@ -22,12 +22,21 @@ DEFAULT_STATUS = "programada"
 
 def _ensure_timezone_column(conn) -> None:
     """
-    Migración idempotente: en instalaciones antiguas `appointments` no tenía `timezone`.
+    Migracion idempotente: en instalaciones antiguas `appointments` no tenia `timezone`.
     """
     try:
         conn.execute("ALTER TABLE IF EXISTS appointments ADD COLUMN IF NOT EXISTS timezone TEXT")
     except Exception:
-        # No romper flujos por migración best-effort
+        pass
+
+
+def _ensure_client_id_column(conn) -> None:
+    """
+    Migracion idempotente: soporte para asociar citas a un cliente.
+    """
+    try:
+        conn.execute("ALTER TABLE IF EXISTS appointments ADD COLUMN IF NOT EXISTS client_id INTEGER")
+    except Exception:
         pass
 
 
@@ -40,50 +49,68 @@ def normalize_status(raw: Optional[str]) -> str:
         return DEFAULT_STATUS
     value = str(raw).strip().lower()
     if value not in STATUS_LABELS:
-        raise ValueError(f"Estado inválido: {raw}")
+        raise ValueError(f"Estado invalido: {raw}")
     return value
 
 
 def list_appointments() -> List[Dict[str, Any]]:
     with get_db() as conn:
         _ensure_timezone_column(conn)
-        rows = conn.execute(
-            "SELECT * FROM appointments ORDER BY start_time DESC"
-        ).fetchall()
+        _ensure_client_id_column(conn)
+        rows = conn.execute("SELECT * FROM appointments ORDER BY start_time DESC").fetchall()
     return [row_to_appointment_api(r) for r in rows]
 
 
-def create_appointment(title: str, description: str, start_raw: str, end_raw: str, status_raw: Optional[str] = None, timezone: Optional[str] = None):
+def create_appointment(
+    title: str,
+    description: str,
+    start_raw: str,
+    end_raw: str,
+    status_raw: Optional[str] = None,
+    timezone: Optional[str] = None,
+    client_id: Optional[int] = None,
+):
     start_time = parse_datetime(start_raw)
     end_time = parse_datetime(end_raw)
     status = normalize_status(status_raw)
     with get_db() as conn:
         _ensure_timezone_column(conn)
+        _ensure_client_id_column(conn)
         conn.execute(
             """
-            INSERT INTO appointments (title, description, start_time, end_time, status, timezone)
-            VALUES (%s, %s, %s, %s, %s, %s)
+            INSERT INTO appointments (title, description, start_time, end_time, status, timezone, client_id)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
             """,
-            (title, description, start_time, end_time, status, timezone),
+            (title, description, start_time, end_time, status, timezone, client_id),
         )
 
 
 def update_appointment(
-    appointment_id: int, title: str, description: str, start_raw: str, end_raw: str, status_raw: Optional[str] = None, timezone: Optional[str] = None
+    appointment_id: int,
+    title: str,
+    description: str,
+    start_raw: str,
+    end_raw: str,
+    status_raw: Optional[str] = None,
+    timezone: Optional[str] = None,
+    client_id: Optional[int] = None,
 ) -> bool:
     start_time = parse_datetime(start_raw)
     end_time = parse_datetime(end_raw)
     status = normalize_status(status_raw)
     fields = ["title=%s", "description=%s", "start_time=%s", "end_time=%s", "status=%s", "updated_at=NOW()"]
-    values = [title, description, start_time, end_time, status]
+    values: List[Any] = [title, description, start_time, end_time, status]
     if timezone:
         fields.append("timezone=%s")
         values.append(timezone)
-    
+    if client_id is not None:
+        fields.append("client_id=%s")
+        values.append(client_id)
     values.append(appointment_id)
-    
+
     with get_db() as conn:
         _ensure_timezone_column(conn)
+        _ensure_client_id_column(conn)
         updated = conn.execute(
             f"""
             UPDATE appointments
@@ -97,9 +124,7 @@ def update_appointment(
 
 def delete_appointment(appointment_id: int) -> bool:
     with get_db() as conn:
-        deleted = conn.execute(
-            "DELETE FROM appointments WHERE id=%s", (appointment_id,)
-        ).rowcount
+        deleted = conn.execute("DELETE FROM appointments WHERE id=%s", (appointment_id,)).rowcount
     return bool(deleted)
 
 
@@ -110,16 +135,16 @@ def api_list():
 def api_get(appointment_id: int):
     with get_db() as conn:
         _ensure_timezone_column(conn)
+        _ensure_client_id_column(conn)
         try:
             row = conn.execute(
                 """
-                SELECT id, title, description, start_time, end_time, status, timezone, created_at, updated_at
+                SELECT id, title, description, start_time, end_time, status, timezone, client_id, created_at, updated_at
                 FROM appointments WHERE id=%s
                 """,
                 (appointment_id,),
             ).fetchone()
         except errors.UndefinedColumn:
-            # Instalaciones antiguas: responder sin timezone
             row = conn.execute(
                 """
                 SELECT id, title, description, start_time, end_time, status, created_at, updated_at
@@ -132,29 +157,41 @@ def api_get(appointment_id: int):
     return row_to_appointment_api(row)
 
 
+def _coerce_client_id(raw: Any):
+    if raw is None or raw == "":
+        return None
+    try:
+        return int(raw)
+    except Exception:
+        raise ValueError("client_id_invalido")
+
+
 def api_create(payload: Dict[str, Any]):
     title = payload.get("title")
     start_raw = payload.get("start_time")
     end_raw = payload.get("end_time")
     if not title or not start_raw or not end_raw:
         raise ValueError("title, start_time y end_time son requeridos")
+
     start_dt = parse_datetime(start_raw)
     end_dt = parse_datetime(end_raw)
     status = normalize_status(payload.get("status"))
     timezone = payload.get("timezone")
+    client_id = _coerce_client_id(payload.get("client_id"))
+
     with get_db() as conn:
         _ensure_timezone_column(conn)
+        _ensure_client_id_column(conn)
         try:
             row = conn.execute(
                 """
-                INSERT INTO appointments (title, description, start_time, end_time, status, timezone)
-                VALUES (%s, %s, %s, %s, %s, %s)
-                RETURNING id, title, description, start_time, end_time, status, timezone, created_at, updated_at
+                INSERT INTO appointments (title, description, start_time, end_time, status, timezone, client_id)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                RETURNING id, title, description, start_time, end_time, status, timezone, client_id, created_at, updated_at
                 """,
-                (title, payload.get("description"), start_dt, end_dt, status, timezone),
+                (title, payload.get("description"), start_dt, end_dt, status, timezone, client_id),
             ).fetchone()
         except errors.UndefinedColumn:
-            # Fallback por si el ALTER falló por permisos/otra razón
             row = conn.execute(
                 """
                 INSERT INTO appointments (title, description, start_time, end_time, status)
@@ -163,12 +200,13 @@ def api_create(payload: Dict[str, Any]):
                 """,
                 (title, payload.get("description"), start_dt, end_dt, status),
             ).fetchone()
+
     logger.info("Cita creada id=%s title=%s", row["id"], row["title"])
     return row_to_appointment_api(row)
 
 
 def api_update(appointment_id: int, payload: Dict[str, Any]):
-    fields = []
+    fields: List[str] = []
     values: List[Any] = []
     if "title" in payload:
         fields.append("title=%s")
@@ -188,6 +226,9 @@ def api_update(appointment_id: int, payload: Dict[str, Any]):
     if "timezone" in payload:
         values.append(payload["timezone"])
         fields.append("timezone=%s")
+    if "client_id" in payload:
+        values.append(_coerce_client_id(payload.get("client_id")))
+        fields.append("client_id=%s")
 
     if not fields:
         logger.warning("Update calendario sin cambios id=%s payload=%s", appointment_id, payload)
@@ -196,33 +237,33 @@ def api_update(appointment_id: int, payload: Dict[str, Any]):
     values.append(appointment_id)
     with get_db() as conn:
         _ensure_timezone_column(conn)
+        _ensure_client_id_column(conn)
         try:
             row = conn.execute(
                 f"""
                 UPDATE appointments
                 SET {', '.join(fields)}, updated_at=NOW()
                 WHERE id=%s
-                RETURNING id, title, description, start_time, end_time, status, timezone, created_at, updated_at
+                RETURNING id, title, description, start_time, end_time, status, timezone, client_id, created_at, updated_at
                 """,
                 tuple(values),
             ).fetchone()
         except errors.UndefinedColumn:
-            # Si timezone no existe, quitar ese campo del update/returning
-            fields_no_tz = [f for f in fields if f != "timezone=%s"]
-            values_no_tz = []
-            for i, f in enumerate(fields):
-                if f == "timezone=%s":
+            fields_no_extra = [f for f in fields if f not in ("timezone=%s", "client_id=%s")]
+            values_no_extra: List[Any] = []
+            for idx, field in enumerate(fields):
+                if field in ("timezone=%s", "client_id=%s"):
                     continue
-                values_no_tz.append(values[i])
-            values_no_tz.append(appointment_id)
+                values_no_extra.append(values[idx])
+            values_no_extra.append(appointment_id)
             row = conn.execute(
                 f"""
                 UPDATE appointments
-                SET {', '.join(fields_no_tz)}, updated_at=NOW()
+                SET {', '.join(fields_no_extra)}, updated_at=NOW()
                 WHERE id=%s
                 RETURNING id, title, description, start_time, end_time, status, created_at, updated_at
                 """,
-                tuple(values_no_tz),
+                tuple(values_no_extra),
             ).fetchone()
     if not row:
         raise LookupError("not_found")
@@ -232,10 +273,9 @@ def api_update(appointment_id: int, payload: Dict[str, Any]):
 
 def api_delete(appointment_id: int):
     with get_db() as conn:
-        deleted = conn.execute(
-            "DELETE FROM appointments WHERE id=%s RETURNING id", (appointment_id,)
-        ).fetchone()
+        deleted = conn.execute("DELETE FROM appointments WHERE id=%s RETURNING id", (appointment_id,)).fetchone()
     if not deleted:
         raise LookupError("not_found")
     logger.info("Cita eliminada id=%s", appointment_id)
     return {"deleted": appointment_id}
+

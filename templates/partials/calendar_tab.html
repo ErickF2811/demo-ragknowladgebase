@@ -89,7 +89,7 @@
             </div>
             <div class="d-flex flex-column gap-1">
               <button class="btn-icon-soft primary" type="button"
-                onclick="openEdit({{ c.id }}, '{{ c.title|escape }}', '{{ c.description|default('', true)|escape }}', '{{ c.start_time }}', '{{ c.end_time }}', '{{ c.status|default('programada') }}')"
+                onclick="openEdit({{ c.id }}, '{{ c.title|escape }}', '{{ c.description|default('', true)|escape }}', '{{ c.start_time }}', '{{ c.end_time }}', '{{ c.status|default('programada') }}', {{ c.client_id if c.client_id is not none else 'null' }})"
                 title="Editar">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
                   stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

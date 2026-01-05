@@ -107,14 +107,59 @@ BEGIN
             start_time TIMESTAMPTZ NOT NULL,
             end_time TIMESTAMPTZ NOT NULL,
             timezone TEXT,
+            client_id INTEGER,
             status appointment_status NOT NULL DEFAULT 'programada',
             created_at TIMESTAMPTZ DEFAULT NOW(),
             updated_at TIMESTAMPTZ DEFAULT NOW()
         )
     $appts$;
 
+    EXECUTE $clients$
+        CREATE TABLE IF NOT EXISTS clients (
+            id SERIAL PRIMARY KEY,
+            full_name TEXT NOT NULL,
+            id_type TEXT NOT NULL,
+            id_number TEXT NOT NULL,
+            phone TEXT,
+            email TEXT,
+            address TEXT,
+            notes TEXT,
+            created_at TIMESTAMPTZ DEFAULT NOW(),
+            updated_at TIMESTAMPTZ DEFAULT NOW()
+        )
+    $clients$;
+
+    EXECUTE $client_notes$
+        CREATE TABLE IF NOT EXISTS client_notes (
+            id SERIAL PRIMARY KEY,
+            client_id INTEGER NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+            body TEXT NOT NULL,
+            created_at TIMESTAMPTZ DEFAULT NOW()
+        )
+    $client_notes$;
+
     -- Migraciones idempotentes (para schemas existentes creados con versiones anteriores)
     EXECUTE 'ALTER TABLE IF EXISTS appointments ADD COLUMN IF NOT EXISTS timezone TEXT';
+    EXECUTE 'ALTER TABLE IF EXISTS appointments ADD COLUMN IF NOT EXISTS client_id INTEGER';
+    EXECUTE 'CREATE TABLE IF NOT EXISTS clients (id SERIAL PRIMARY KEY, full_name TEXT NOT NULL, id_type TEXT NOT NULL, id_number TEXT NOT NULL, phone TEXT, email TEXT, address TEXT, notes TEXT, created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW())';
+    EXECUTE 'CREATE TABLE IF NOT EXISTS client_notes (id SERIAL PRIMARY KEY, client_id INTEGER NOT NULL REFERENCES clients(id) ON DELETE CASCADE, body TEXT NOT NULL, created_at TIMESTAMPTZ DEFAULT NOW())';
+    EXECUTE 'ALTER TABLE IF EXISTS clients ADD COLUMN IF NOT EXISTS id_type TEXT';
+    EXECUTE 'ALTER TABLE IF EXISTS clients ADD COLUMN IF NOT EXISTS id_number TEXT';
+    BEGIN
+        EXECUTE 'ALTER TABLE clients ADD CONSTRAINT clients_identification_required CHECK (coalesce(id_type, '''') IN (''cedula'', ''pasaporte'') AND btrim(coalesce(id_number, '''')) <> '''') NOT VALID';
+    EXCEPTION
+        WHEN duplicate_object THEN NULL;
+        WHEN undefined_table THEN NULL;
+        WHEN undefined_column THEN NULL;
+    END;
+    -- FK best-effort (si ya existe, ignorar)
+    BEGIN
+        EXECUTE 'ALTER TABLE appointments ADD CONSTRAINT appointments_client_id_fkey FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE SET NULL';
+    EXCEPTION
+        WHEN duplicate_object THEN NULL;
+        WHEN undefined_table THEN NULL;
+        WHEN undefined_column THEN NULL;
+    END;
 END;
 $$ LANGUAGE plpgsql;
 

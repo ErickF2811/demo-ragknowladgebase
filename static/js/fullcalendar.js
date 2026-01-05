@@ -104,6 +104,7 @@
         extendedProps: {
           status: a.status,
           description: a.description || '',
+          client_id: a.client_id ?? null,
         },
       }))
       success(events)
@@ -222,7 +223,8 @@
               String(ev.extendedProps?.description || ''),
               toIso(ev.start),
               toIso(ev.end || ev.start),
-              String(ev.extendedProps?.status || 'programada')
+              String(ev.extendedProps?.status || 'programada'),
+              ev.extendedProps?.client_id ?? null
             )
             return
           }

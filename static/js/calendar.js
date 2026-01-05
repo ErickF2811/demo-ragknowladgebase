@@ -33,6 +33,85 @@
     const slug = getWorkspaceSlug();
     return slug ? `/w/${encodeURIComponent(slug)}/api/calendar` : '/api/calendar';
   };
+
+  const getClientsApiBase = () => {
+    const slug = getWorkspaceSlug();
+    return slug ? `/w/${encodeURIComponent(slug)}/api/clientes` : '';
+  };
+
+  let clientsCache = null;
+  let clientsLoading = null;
+
+  async function ensureClientsLoaded() {
+    if (Array.isArray(clientsCache)) return clientsCache;
+    if (clientsLoading) return clientsLoading;
+    const base = getClientsApiBase();
+    if (!base) {
+      clientsCache = [];
+      return clientsCache;
+    }
+    clientsLoading = (async () => {
+      try {
+        const res = await fetch(`${base}?limit=500`, { headers: { Accept: "application/json" } });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
+        clientsCache = Array.isArray(data.clients) ? data.clients : [];
+        return clientsCache;
+      } catch (err) {
+        console.warn("No se pudieron cargar clientes:", err?.message || err);
+        clientsCache = [];
+        return clientsCache;
+      } finally {
+        clientsLoading = null;
+      }
+    })();
+    return clientsLoading;
+  }
+
+  const formatClientLabel = (client) => {
+    if (!client) return "";
+    const name = String(client.full_name || "").trim() || `Cliente #${client.id}`;
+    const idType = String(client.id_type || "").trim();
+    const idNumber = String(client.id_number || "").trim();
+    const idText = idNumber ? (idType ? `${idType}: ${idNumber}` : idNumber) : "";
+    return idText ? `${name} (${idText})` : name;
+  };
+
+  function populateClientSelect(selectEl, selectedId, clients) {
+    if (!selectEl) return;
+    const list = Array.isArray(clients) ? clients : [];
+    const selected = selectedId === null || selectedId === undefined || selectedId === "" ? "" : String(selectedId);
+
+    selectEl.innerHTML = "";
+
+    const noneOpt = document.createElement("option");
+    noneOpt.value = "";
+    noneOpt.textContent = "Sin cliente";
+    selectEl.appendChild(noneOpt);
+
+    let found = selected === "";
+    for (const client of list) {
+      const opt = document.createElement("option");
+      opt.value = String(client.id);
+      opt.textContent = formatClientLabel(client);
+      if (opt.value === selected) {
+        opt.selected = true;
+        found = true;
+      }
+      selectEl.appendChild(opt);
+    }
+
+    if (!found && selected) {
+      const opt = document.createElement("option");
+      opt.value = selected;
+      opt.textContent = `Cliente #${selected}`;
+      opt.selected = true;
+      selectEl.appendChild(opt);
+      found = true;
+    }
+
+    selectEl.value = found ? selected : "";
+  }
   const getWebBase = () => {
     const slug = getWorkspaceSlug();
     // Nota: Si hay slug, las rutas de la app web a veces no se prefijan con /w/slug si la app maneja la sesión
@@ -112,7 +191,7 @@
   const LOCKED_STATUS_VALUES = ["cancelada", "completada", "no_show"];
   const isStatusLocked = (status) => LOCKED_STATUS_VALUES.includes(String(status || "").toLowerCase());
 
-  window.openEdit = (id, title, description, start, end, status = DEFAULT_STATUS) => {
+  window.openEdit = (id, title, description, start, end, status = DEFAULT_STATUS, clientId = null) => {
     const formHtml = `
       <form method="post" action="/calendar/${id}/update" onsubmit="
         const s = this.querySelector('[name=ui_start]').value;
@@ -124,6 +203,10 @@
       ">
         <div class="mb-2"><label class="form-label">Titulo</label><input class="form-control" name="title" value="${title}"></div>
         <div class="mb-2"><label class="form-label">Descripcion</label><input class="form-control" name="description" value="${description || ""}"></div>
+        <div class="mb-2">
+          <label class="form-label">Cliente (opcional)</label>
+          <select class="form-select" name="client_id" data-client-select></select>
+        </div>
         
         <input type="hidden" name="start_time">
         <input type="hidden" name="start_time">
@@ -147,6 +230,18 @@
     document.body.appendChild(modalEl);
     const modal = new bootstrap.Modal(modalEl);
     modal.show();
+
+    const clientSelect = modalEl.querySelector("[data-client-select]");
+    populateClientSelect(clientSelect, clientId, clientsCache || []);
+    if (!Array.isArray(clientsCache)) {
+      if (clientSelect) clientSelect.disabled = true;
+      void ensureClientsLoaded()
+        .then((clients) => populateClientSelect(clientSelect, clientId, clients))
+        .finally(() => {
+          if (clientSelect) clientSelect.disabled = false;
+        });
+    }
+
     modalEl.addEventListener("hidden.bs.modal", () => modalEl.remove());
   };
 
@@ -195,6 +290,7 @@
   const eventStartInput = document.getElementById("eventStartInput");
   const eventEndInput = document.getElementById("eventEndInput");
   const eventStatusSelect = document.getElementById("eventStatusSelect");
+  const eventClientSelect = document.getElementById("eventClientSelect");
   const appointmentsTableBody = document.getElementById("appointmentsTableBody");
   const bulkDeleteBtn = document.getElementById("bulkDeleteBtn");
   const selectAllAppointments = document.getElementById("selectAllAppointments");
@@ -1278,7 +1374,10 @@
       // Escape strings
       const safeTitle = (ev.title || "").replace(/'/g, "&#39;");
       const safeDesc = (ev.description || "").replace(/'/g, "&#39;");
-      editBtn.setAttribute("onclick", `openEdit(${ev.id}, '${safeTitle}', '${safeDesc}', '${startForm}', '${endForm}', '${ev.status || DEFAULT_STATUS}')`);
+      editBtn.setAttribute(
+        "onclick",
+        `openEdit(${ev.id}, '${safeTitle}', '${safeDesc}', '${startForm}', '${endForm}', '${ev.status || DEFAULT_STATUS}', ${ev.client_id == null ? "null" : ev.client_id})`
+      );
     }
   }
 
@@ -1355,6 +1454,10 @@
             <div class="col"><label class="form-label">Fin</label><input type="datetime-local" class="form-control" id="detailEnd" required></div>
           </div>
           <div class="mt-3">
+            <label class="form-label">Cliente (opcional)</label>
+            <select class="form-select" id="detailClient"></select>
+          </div>
+          <div class="mt-3">
             <label class="form-label">Estado</label>
             <select class="form-select" id="detailStatus">
               ${renderStatusOptions()}
@@ -1376,6 +1479,7 @@
   const detailStart = eventDetailModalEl.querySelector("#detailStart");
   const detailEnd = eventDetailModalEl.querySelector("#detailEnd");
   const detailStatus = eventDetailModalEl.querySelector("#detailStatus");
+  const detailClient = eventDetailModalEl.querySelector("#detailClient");
   const detailDeleteBtn = eventDetailModalEl.querySelector("#detailDeleteBtn");
   // currentEventId ya declarado arriba
 
@@ -1421,6 +1525,19 @@
     detailStart.value = toInput(start?.toISOString ? start.toISOString() : start);
     detailEnd.value = toInput(end?.toISOString ? end.toISOString() : end);
     detailStatus.value = ev.status || DEFAULT_STATUS;
+
+    const currentClientId = ev.client_id ?? null;
+    if (detailClient) {
+      populateClientSelect(detailClient, currentClientId, clientsCache || []);
+      if (!Array.isArray(clientsCache)) {
+        detailClient.disabled = true;
+        void ensureClientsLoaded()
+          .then((clients) => populateClientSelect(detailClient, currentClientId, clients))
+          .finally(() => {
+            detailClient.disabled = false;
+          });
+      }
+    }
     // detailTimezone.value = ev.timezone || ""; // si lo hubieramos implementado en modal detalle
 
     const startDate = start instanceof Date ? start : new Date(start);
@@ -1429,6 +1546,7 @@
       title: detailTitle.value,
       description: detailDesc.value,
       status: detailStatus.value,
+      clientId: detailClient?.value || "",
       startMs: !isNaN(startDate?.getTime?.()) ? startDate.getTime() : null,
       endMs: !isNaN(endDate?.getTime?.()) ? endDate.getTime() : null,
     };
@@ -1450,11 +1568,19 @@
     const nextTitle = detailTitle.value.trim();
     const nextDesc = detailDesc.value.trim();
     const nextStatus = detailStatus.value || DEFAULT_STATUS;
+    const nextClientRaw = detailClient?.value || "";
 
     const payload = {};
     if (!currentEventSnapshot || currentEventSnapshot.title !== nextTitle) payload.title = nextTitle;
     if (!currentEventSnapshot || currentEventSnapshot.description !== nextDesc) payload.description = nextDesc;
     if (!currentEventSnapshot || currentEventSnapshot.status !== nextStatus) payload.status = nextStatus;
+    if (!currentEventSnapshot || currentEventSnapshot.clientId !== nextClientRaw) {
+      if (!nextClientRaw) payload.client_id = null;
+      else {
+        const parsed = parseInt(nextClientRaw, 10);
+        payload.client_id = Number.isFinite(parsed) ? parsed : null;
+      }
+    }
 
     const startMs = startVal.getTime();
     const endMs = endVal.getTime();
@@ -1466,7 +1592,7 @@
       return;
     }
     try {
-      const res = await fetch(`/api/calendar/${currentEventId}`, {
+      const res = await fetch(`${getApiBase()}/${currentEventId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", "X-Timezone": clientTimeZone },
         body: JSON.stringify(payload),
@@ -1475,8 +1601,8 @@
       if (res.ok) {
         eventDetailModal.hide();
         const idx = events.findIndex((ev) => ev.id === currentEventId);
-        if (idx >= 0)
-          events[idx] = {
+        if (idx >= 0) {
+          const nextEv = {
             ...events[idx],
             title: payload.title ?? events[idx].title,
             description: payload.description ?? events[idx].description,
@@ -1485,6 +1611,9 @@
             start: payload.start_time ? new Date(payload.start_time) : events[idx].start,
             end: payload.end_time ? new Date(payload.end_time) : events[idx].end,
           };
+          if ("client_id" in payload) nextEv.client_id = payload.client_id;
+          events[idx] = nextEv;
+        }
         emitCalendarChanged();
         renderCalendar();
       } else alert(`No se pudo actualizar: ${data.error || res.statusText}`);
@@ -1509,6 +1638,18 @@
     if (eventTitleInput) eventTitleInput.value = "";
     if (eventDescInput) eventDescInput.value = "";
     if (eventStatusSelect) eventStatusSelect.value = DEFAULT_STATUS;
+    if (eventClientSelect) {
+      populateClientSelect(eventClientSelect, null, clientsCache || []);
+      eventClientSelect.value = "";
+      if (!Array.isArray(clientsCache)) {
+        eventClientSelect.disabled = true;
+        void ensureClientsLoaded()
+          .then((clients) => populateClientSelect(eventClientSelect, null, clients))
+          .finally(() => {
+            eventClientSelect.disabled = false;
+          });
+      }
+    }
     const rangeStart = startDate || getRoundedDefaultRange().start;
     const rangeEnd = endDate || new Date(rangeStart.getTime() + SLOT_MINUTES * 2 * 60000);
     primeCreateModalRange(rangeStart, rangeEnd);
@@ -1549,6 +1690,11 @@
       status: eventStatusSelect?.value || DEFAULT_STATUS,
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "",
     };
+    const clientRaw = eventClientSelect?.value || "";
+    if (clientRaw) {
+      const parsed = parseInt(clientRaw, 10);
+      if (Number.isFinite(parsed)) payload.client_id = parsed;
+    }
     try {
       const res = await fetch(getApiBase(), { method: "POST", headers: { "Content-Type": "application/json", "X-Timezone": clientTimeZone }, body: JSON.stringify(payload) });
       const data = await res.json().catch(() => ({}));
@@ -1583,6 +1729,7 @@
     const startTimeStr = ev.start ? formatDateYMD(ev.start) : "";
     const startTimeHour = ev.start ? formatHourHM(ev.start) : "";
     const startData = ev.start ? ev.start.toISOString() : "";
+    const clientIdParam = ev.client_id == null ? "null" : ev.client_id;
 
     div.innerHTML = `
       <div class="form-check m-0">
@@ -1607,7 +1754,7 @@
       </div>
       <div class="d-flex flex-column gap-1">
         <button class="btn-icon-soft primary" type="button"
-          onclick="openEdit(${ev.id || ""}, '${(ev.title || "").replace(/'/g, "&#39;")}', '${(ev.description || "").replace(/'/g, "&#39;")}', '${startForm}', '${endForm}', '${eventStatus}')"
+          onclick="openEdit(${ev.id || ""}, '${(ev.title || "").replace(/'/g, "&#39;")}', '${(ev.description || "").replace(/'/g, "&#39;")}', '${startForm}', '${endForm}', '${eventStatus}', ${clientIdParam})"
           title="Editar">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

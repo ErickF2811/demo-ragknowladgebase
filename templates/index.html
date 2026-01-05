@@ -342,6 +342,7 @@
     <div class="side-section-title">Navegación</div>
     <button class="side-link" data-tab-target="files">Archivos</button>
     <button class="side-link" data-tab-target="calendar">Calendario</button>
+    <button class="side-link" data-tab-target="clients">Gestionar clientes</button>
     <button class="side-link" data-tab-target="whatsapp">Integración WhatsApp</button>
     {% if current_workspace %}
     <a class="side-link" href="{{ url_for('ui.workspace_by_slug', slug=current_workspace.schema_name) }}">Resumen workspace</a>
@@ -408,6 +409,9 @@
       </div>
       <div class="tab-pane fade show active" id="calendar" role="tabpanel">
         {% include "partials/calendar_tab.html" %}
+      </div>
+      <div class="tab-pane fade" id="clients" role="tabpanel">
+        {% include "clientes.html" %}
       </div>
       <div class="tab-pane fade" id="whatsapp" role="tabpanel">
         {% include "partials/whatsapp_tab.html" %}
@@ -523,27 +527,38 @@
             <textarea class="form-control" id="eventDescInput" rows="2"
               placeholder="Agregar descripcion o notas"></textarea>
           </div>
-          <div class="quick-event-row">
-            <div class="quick-event-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="7" />
-                <circle cx="12" cy="12" r="3" />
-                <path d="M12 5v2" />
-                <path d="M12 17v2" />
-                <path d="M5 12h2" />
-                <path d="M17 12h2" />
-              </svg>
-            </div>
-            <select class="form-select" id="eventStatusSelect">
-              {% for status in appointment_statuses %}
-              <option value="{{ status.value }}">{{ status.label }}</option>
-              {% endfor %}
-            </select>
-          </div>
-        </div>
-        <div class="modal-footer border-0 pt-0 flex-column flex-sm-row gap-2 justify-content-between align-items-start">
-          <div class="text-muted small" id="eventRangeLabel"></div>
-          <div class="d-flex gap-2 w-100 justify-content-sm-end">
+           <div class="quick-event-row">
+             <div class="quick-event-icon" aria-hidden="true">
+               <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                 <circle cx="12" cy="12" r="7" />
+                 <circle cx="12" cy="12" r="3" />
+                 <path d="M12 5v2" />
+                 <path d="M12 17v2" />
+                 <path d="M5 12h2" />
+                 <path d="M17 12h2" />
+               </svg>
+             </div>
+             <select class="form-select" id="eventStatusSelect">
+               {% for status in appointment_statuses %}
+               <option value="{{ status.value }}">{{ status.label }}</option>
+               {% endfor %}
+             </select>
+           </div>
+           <div class="quick-event-row">
+             <div class="quick-event-icon" aria-hidden="true">
+               <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                 <path d="M20 21a8 8 0 0 0-16 0" />
+                 <circle cx="12" cy="9" r="4" />
+               </svg>
+             </div>
+             <select class="form-select" id="eventClientSelect">
+               <option value="">Cliente (opcional)</option>
+             </select>
+           </div>
+         </div>
+         <div class="modal-footer border-0 pt-0 flex-column flex-sm-row gap-2 justify-content-between align-items-start">
+           <div class="text-muted small" id="eventRangeLabel"></div>
+           <div class="d-flex gap-2 w-100 justify-content-sm-end">
             <button type="button" class="btn btn-light flex-fill flex-sm-grow-0"
               data-bs-dismiss="modal">Cancelar</button>
             <button type="submit" class="btn btn-primary flex-fill flex-sm-grow-0">Crear</button>
@@ -781,11 +796,12 @@
   window.vetflowStatuses = {{ appointment_statuses | tojson }};
   window.vetflowStatusLabels = {{ appointment_status_labels | tojson }};
 </script>
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
-<script src="{{ url_for('static', filename='js/calendar.js') }}?v=11"></script>
-<script src="{{ url_for('static', filename='js/fullcalendar.js') }}?v=9"></script>
-<script src="{{ url_for('static', filename='js/whatsapp.js') }}?v=26"></script>
-<script>
+ <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+ <script src="{{ url_for('static', filename='js/calendar.js') }}?v=12"></script>
+ <script src="{{ url_for('static', filename='js/fullcalendar.js') }}?v=10"></script>
+ <script src="{{ url_for('static', filename='js/whatsapp.js') }}?v=26"></script>
+ <script src="{{ url_for('static', filename='js/clientes.js') }}?v=2"></script>
+ <script>
   document.addEventListener('DOMContentLoaded', () => {
     if (window.__renderCalendar) {
       try { window.__renderCalendar(); } catch (err) { console.error('Error renderCalendar inline', err); }

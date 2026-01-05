@@ -4,12 +4,17 @@ Panel Flask con:
 - Gestor de archivos: sube a Azure Blob (prefijo `file/...`), guarda metadatos en PostgreSQL, genera SAS y envía a n8n.
 - Explorador de carpetas (reflejo de Blob): navegación por subcarpetas y drag & drop.
 - Agenda: CRUD de citas con vista mensual y APIs para bots/servicios.
+- Clientes: gestiona contactos (cedula/pasaporte), notas y citas asociadas (opcional).
 
 ## Archivos clave
 - `app.py`: arranque de Flask (usa `vetflow.create_app()`).
 - `vetflow/`: paquete con config, storage, db, servicios y blueprints (archivos, calendario, salud, UI).
 - `templates/index.html`: UI Archivos/Calendario, explorador de carpetas, drag & drop.
-- `schema.sql`: tablas `files` y `appointments` (schema `vetbot`), incluye `blob_url`, `thumbnail_url`, `status`, `processed_at`, `updated_at`.
+- `templates/clientes.html`: UI para **Gestionar clientes** (contactos, notas y citas).
+- `static/js/clientes.js`: frontend para crear/buscar/editar clientes.
+- `vetflow/routes/clientes.py`: endpoints JSON multi-tenant de clientes.
+- `vetflow/services/clientes.py`: lógica DB (clientes, notas, duplicados).
+- `schema.sql`: schema core + schema por workspace (`files`, `appointments`, `clients`, `client_notes`).
 - `.env.example`: variables requeridas.
 - `requirements.txt`: dependencias.
 
@@ -52,6 +57,7 @@ Abre `http://localhost:5000`.
 ## Flujo de uso (UI)
 - Archivos: explora carpetas como en Blob; navega con las filas de carpeta o `[ .. ]`. El drag & drop sube al folder actual. Miniaturas usan SAS temporal. “Enviar a bot” cambia de color según el `status`. El botón “Solicitar borrado” marca el archivo como `deleting` (badge naranja) y dispara el webhook de borrado.
 - Calendario: crea/edita/elimina citas; vista mensual con eventos por día y modal de detalle.
+- Gestionar clientes: crea/busca/edita clientes (identificación obligatoria), agrega notas y agenda citas; desde Calendario puedes asociar una cita a un cliente (opcional).
 
 ## API JSON
 Fechas en ISO8601, ejemplo `2025-01-15T10:00:00Z`.
@@ -59,6 +65,7 @@ Fechas en ISO8601, ejemplo `2025-01-15T10:00:00Z`.
 ## Workspaces y multi-tenancy
 - Tras actualizar el repositorio vuelve a ejecutar `psql "POSTGRES_DSN" -f schema.sql` para asegurarte de que el tipo `vetflow_core.appointment_status`, la función `ensure_workspace_schema` y las tablas globales existen. El script es idempotente.
 - El schema `schema.sql` crea `vetflow_core`, las tablas (`app_users`, `workspaces`, `workspace_members`, `workspace_invites`) y la función `vetflow_core.ensure_workspace_schema(schema_name text)` que provisiona las tablas `files`/`appointments` dentro de un schema dedicado por workspace.
+- Además, `ensure_workspace_schema` provisiona `clients` y `client_notes` y añade las columnas `appointments.timezone` y `appointments.client_id` (nullable) dentro de cada workspace.
 - Cada workspace se asocia a un correo (idealmente Gmail) y genera un schema único `ws_<slug>_<hash>`. El backend invoca `ensure_workspace_schema` automáticamente al crear un workspace para garantizar que existan tablas y tipos.
 - Las variables nuevas (`CORE_SCHEMA`, `WORKSPACE_SCHEMA_PREFIX`, `DEFAULT_OWNER_EMAIL`, `DEFAULT_OWNER_NAME`, `CLERK_PUBLISHABLE_KEY`) controlan dónde se guardan los metadatos, cómo se nombran los schemas y qué usuario se usa como fallback cuando la UI no envía cabeceras `X-User-Email` / `X-User-Name`. Al definir `CLERK_PUBLISHABLE_KEY`, el overlay de Clerk protege todo el panel y sincroniza la sesión mediante `POST /session/clerk` antes de mostrar los datos; además, se crea automáticamente un workspace por defecto para ese usuario.
 - Desde el panel (ruta `/`) puedes seleccionar workspaces existentes, ver sus métricas (archivos/citas) y abrir un modal para crear más. La sesión recuerda el último workspace elegido y todas las operaciones (archivos, calendario, webhooks) se ejecutan dentro de ese schema. Si invocas la UI con `?email=tu_gmail` (o enviando la cabecera `X-User-Email`), Vetflow te mostrará únicamente los workspaces asociados a esa cuenta.
@@ -89,10 +96,53 @@ flowchart LR
 
 
 
+### Modelo de datos (ERD)
+Cada workspace tiene su propio schema en PostgreSQL (ej. `ws_<slug>_<hash>`). Dentro de ese schema existen las tablas de agenda, archivos y ahora también clientes:
+
+```mermaid
+erDiagram
+    CLIENTS {
+        int id PK
+        string full_name
+        string id_type
+        string id_number
+        string phone
+        string email
+        string address
+        string notes
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    CLIENT_NOTES {
+        int id PK
+        int client_id FK
+        string body
+        timestamptz created_at
+    }
+
+    APPOINTMENTS {
+        int id PK
+        string title
+        string description
+        timestamptz start_time
+        timestamptz end_time
+        string timezone
+        string status
+        int client_id FK
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    CLIENTS ||--o{ CLIENT_NOTES : "tiene"
+    CLIENTS o|--o{ APPOINTMENTS : "opcional"
+```
+
 ### Calendario (citas)
 - Listar: `GET /w/<schema_name>/api/calendar`
 - Obtener una: `GET /w/<schema_name>/api/calendar/<id>`
 - Crear: `POST /w/<schema_name>/api/calendar`
+  - Opcional: `client_id` para asociar la cita a un cliente (si se omite o es `null`, queda sin cliente).
   En PowerShell:
   ```powershell
   $payload = @{
@@ -100,6 +150,7 @@ flowchart LR
     description = "Refuerzo anual"
     start_time = "2025-01-15T10:00:00Z"
     end_time = "2025-01-15T10:30:00Z"
+    client_id = 1  # opcional
   } | ConvertTo-Json -Compress
 
   Invoke-RestMethod -Method Post `
@@ -113,6 +164,7 @@ flowchart LR
   $payload = @{
     title = "Vacuna gato (ajustada)"
     end_time = "2025-01-15T10:45:00Z"
+    client_id = $null  # opcional: quitar asociacion
   } | ConvertTo-Json -Compress
 
   Invoke-RestMethod -Method Put `
@@ -122,10 +174,30 @@ flowchart LR
   ```
 - Eliminar: `DELETE /w/<schema_name>/api/calendar/<id>`
 
+### Clientes (CRM)
+- Los clientes viven en la tabla `clients` dentro del schema del workspace.
+- Identificación obligatoria:
+  - `id_type`: `cedula` o `pasaporte`
+  - `id_number`: número/documento
+- Duplicados: si intentas crear/editar un cliente con la misma identificación, la API responde `409` con:
+  - `{ "error": "cliente_ya_existe", "existing_client_id": <id> }`
+
+**Endpoints (multi-tenant)**
+- Listar/buscar: `GET /w/<schema_name>/api/clientes?q=<texto>&limit=200`
+- Crear: `POST /w/<schema_name>/api/clientes`
+- Obtener: `GET /w/<schema_name>/api/clientes/<client_id>`
+- Actualizar: `PUT /w/<schema_name>/api/clientes/<client_id>`
+- Agregar nota: `POST /w/<schema_name>/api/clientes/<client_id>/notas`
+- Crear cita asociada: `POST /w/<schema_name>/api/clientes/<client_id>/citas` (crea en `appointments` con `client_id`)
+
+**UI**
+- Nueva pestaña **Gestionar clientes**: CRUD, notas y citas por cliente.
+- En el modal de crear/editar cita del **Calendario** existe el selector **Cliente (opcional)** que guarda `appointments.client_id`.
+
 ### UI Calendario (FullCalendar)
 - La pestaña **Calendario** usa FullCalendar (vista principal) conectado a los endpoints multi-tenant `/w/<schema_name>/api/calendar`.
 - Vista por defecto: semanal (`timeGridWeek`), con scroll vertical habilitado y centrado alrededor de la hora actual.
-- Crear/editar: FullCalendar reutiliza los mismos modales/formularios ("cartillas") del panel (`Nueva cita` y editar desde la lista o el evento).
+- Crear/editar: FullCalendar reutiliza los mismos modales/formularios ("cartillas") del panel (`Nueva cita` y editar desde la lista o el evento), incluyendo selector de **Cliente (opcional)**.
 - Acciones soportadas:
   - Seleccionar rango en el calendario: abre el modal de creación.
   - Click en evento: abre el modal de edición existente.

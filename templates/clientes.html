@@ -1,0 +1,205 @@
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+      <div>
+        <h5 class="card-title mb-1">Gestionar clientes</h5>
+        <p class="section-subtitle mb-0">Agrega clientes, registra notas y agenda citas asociadas.</p>
+      </div>
+    </div>
+
+    <hr class="my-4" />
+
+    <div id="clientesPanel" data-workspace-slug="{{ current_workspace.schema_name if current_workspace else '' }}">
+      <div class="row g-4">
+        <div class="col-lg-5">
+          <div class="p-3 rounded-4 border bg-light-subtle">
+            <div class="fw-semibold mb-2">Nuevo cliente</div>
+            <form id="clientesCreateForm" class="row g-2">
+              <div class="col-12">
+                <label class="form-label mb-1">Nombre</label>
+                <input class="form-control" name="full_name" required placeholder="Nombre completo">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label mb-1">Teléfono</label>
+                <input class="form-control" name="phone" placeholder="+593...">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label mb-1">Email</label>
+                <input class="form-control" name="email" placeholder="correo@dominio.com">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label mb-1">Tipo identificacion</label>
+                <select class="form-select" name="id_type" required>
+                  <option value="" selected disabled>Selecciona...</option>
+                  <option value="cedula">Cedula</option>
+                  <option value="pasaporte">Pasaporte</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label mb-1">Numero identificacion</label>
+                <input class="form-control" name="id_number" placeholder="Cedula / Pasaporte" required>
+              </div>
+              <div class="col-12">
+                <label class="form-label mb-1">Dirección</label>
+                <input class="form-control" name="address" placeholder="Dirección">
+              </div>
+              <div class="col-12">
+                <label class="form-label mb-1">Nota (opcional)</label>
+                <textarea class="form-control" name="notes" rows="2" placeholder="Ej: prefiere atención por la tarde"></textarea>
+              </div>
+              <div class="col-12 d-grid">
+                <button class="btn btn-primary" type="submit" {% if not current_workspace %}disabled{% endif %}>Guardar cliente</button>
+              </div>
+              <div class="col-12">
+                <div class="alert d-none py-2 mb-0 mt-2" id="clientesCreateStatus" role="alert" aria-live="polite"
+                  data-status-ui="alert"></div>
+              </div>
+            </form>
+          </div>
+
+          <div class="mt-4">
+            <div class="d-flex gap-2 align-items-center mb-2">
+              <input id="clientesSearchInput" class="form-control" placeholder="Buscar por nombre, telefono, email o identificacion" {% if not current_workspace %}disabled{% endif %}>
+              <button id="clientesRefreshBtn" class="btn btn-outline-secondary" type="button" {% if not current_workspace %}disabled{% endif %}>Buscar</button>
+            </div>
+            <div class="small text-muted mb-2" id="clientesListHint"></div>
+            <div class="list-group" id="clientesList"></div>
+          </div>
+        </div>
+
+        <div class="col-lg-7">
+          <div class="p-3 rounded-4 border bg-white">
+            <div class="d-flex justify-content-between align-items-start gap-3">
+              <div style="min-width: 0;">
+                <div class="fw-semibold mb-1" id="clienteDetailName">Selecciona un cliente</div>
+                <div class="text-muted small" id="clienteDetailMeta"></div>
+              </div>
+              <button id="clienteEditBtn" class="btn btn-outline-primary btn-sm" type="button" disabled>Editar</button>
+            </div>
+
+            <div class="mt-3" id="clienteDetailBody" style="display:none;">
+              <div class="row g-2">
+                <div class="col-md-6">
+                  <div class="small text-muted">Teléfono</div>
+                  <div class="fw-semibold" id="clientePhone"></div>
+                </div>
+                <div class="col-md-6">
+                  <div class="small text-muted">Email</div>
+                  <div class="fw-semibold" id="clienteEmail"></div>
+                </div>
+                <div class="col-md-6">
+                  <div class="small text-muted">Identificacion</div>
+                  <div class="fw-semibold" id="clienteIdentification"></div>
+                </div>
+                <div class="col-12">
+                  <div class="small text-muted">Dirección</div>
+                  <div class="fw-semibold" id="clienteAddress"></div>
+                </div>
+                <div class="col-12">
+                  <div class="small text-muted">Notas</div>
+                  <div id="clienteNotes"></div>
+                </div>
+              </div>
+
+              <hr class="my-3" />
+
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <div class="fw-semibold mb-2">Agregar nota</div>
+                  <form id="clienteAddNoteForm" class="d-flex flex-column gap-2">
+                    <textarea class="form-control" name="body" rows="3" placeholder="Escribe una nota..."></textarea>
+                    <button class="btn btn-outline-secondary" type="submit">Guardar nota</button>
+                    <div class="small" id="clienteNoteStatus" aria-live="polite"></div>
+                  </form>
+                  <div class="mt-3" id="clienteNotesList"></div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="fw-semibold mb-2">Agendar cita</div>
+                  <form id="clienteAddApptForm" class="d-flex flex-column gap-2">
+                    <input class="form-control" name="title" placeholder="Título (ej. Vacunación)" required>
+                    <textarea class="form-control" name="description" rows="2" placeholder="Descripción (opcional)"></textarea>
+                    <div class="d-flex gap-2 align-items-center">
+                      <input class="form-control" type="datetime-local" name="start_time" required>
+                      <span class="text-muted">→</span>
+                      <input class="form-control" type="datetime-local" name="end_time" required>
+                    </div>
+                    <select class="form-select" name="status">
+                      {% for st in appointment_statuses %}
+                      <option value="{{ st.value }}">{{ st.label }}</option>
+                      {% endfor %}
+                    </select>
+                    <button class="btn btn-primary" type="submit">Crear cita</button>
+                    <div class="small" id="clienteApptStatus" aria-live="polite"></div>
+                  </form>
+                  <div class="mt-3">
+                    <div class="small text-muted mb-2">Citas del cliente</div>
+                    <div id="clienteApptsList"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-3 text-muted small" id="clienteEmptyHint">
+              Para comenzar: crea un cliente o busca uno en la lista.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="clienteEditModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form id="clienteEditForm">
+        <div class="modal-header">
+          <h5 class="modal-title">Editar cliente</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-2">
+            <div class="col-12">
+              <label class="form-label mb-1">Nombre</label>
+              <input class="form-control" name="full_name" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label mb-1">Teléfono</label>
+              <input class="form-control" name="phone">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label mb-1">Email</label>
+              <input class="form-control" name="email">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label mb-1">Tipo identificacion</label>
+              <select class="form-select" name="id_type" required>
+                <option value="" selected disabled>Selecciona...</option>
+                <option value="cedula">Cedula</option>
+                <option value="pasaporte">Pasaporte</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label mb-1">Numero identificacion</label>
+              <input class="form-control" name="id_number" required>
+            </div>
+            <div class="col-12">
+              <label class="form-label mb-1">Dirección</label>
+              <input class="form-control" name="address">
+            </div>
+            <div class="col-12">
+              <label class="form-label mb-1">Notas</label>
+              <textarea class="form-control" name="notes" rows="3"></textarea>
+            </div>
+          </div>
+          <div class="alert alert-danger d-none mt-3" id="clienteEditError" role="alert"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar cambios</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

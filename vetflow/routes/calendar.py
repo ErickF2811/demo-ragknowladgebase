@@ -45,13 +45,21 @@ def create_calendar():
     end_raw = request.form.get("end_time")
     status_raw = request.form.get("status")
     timezone_raw = request.form.get("timezone")
+    client_id_raw = request.form.get("client_id")
+    client_id = None
+    if client_id_raw not in (None, ""):
+        try:
+            client_id = int(client_id_raw)
+        except Exception:
+            flash("Cliente invalido", "danger")
+            return redirect(url_for("ui.index"))
 
     if not title or not start_raw or not end_raw:
         flash("Titulo, inicio y fin son obligatorios", "danger")
         return redirect(url_for("ui.index"))
 
     try:
-        calendar_service.create_appointment(title, description, start_raw, end_raw, status_raw, timezone_raw)
+        calendar_service.create_appointment(title, description, start_raw, end_raw, status_raw, timezone_raw, client_id)
     except ValueError as ex:
         flash(str(ex), "danger")
         return redirect(url_for("ui.index"))
@@ -68,9 +76,17 @@ def update_calendar(appointment_id: int):
     end_raw = request.form.get("end_time")
     status_raw = request.form.get("status")
     timezone_raw = request.form.get("timezone")
+    client_id_raw = request.form.get("client_id")
+    client_id = None
+    if client_id_raw not in (None, ""):
+        try:
+            client_id = int(client_id_raw)
+        except Exception:
+            flash("Cliente invalido", "danger")
+            return redirect(url_for("ui.index"))
     try:
         updated = calendar_service.update_appointment(
-            appointment_id, title, description, start_raw, end_raw, status_raw, timezone_raw
+            appointment_id, title, description, start_raw, end_raw, status_raw, timezone_raw, client_id
         )
     except ValueError as ex:
         flash(str(ex), "danger")

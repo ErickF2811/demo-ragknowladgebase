@@ -40,6 +40,7 @@ def row_to_appointment_api(row: dict):
         "end_time": _iso_datetime(row.get("end_time")),
         "status": row.get("status"),
         "timezone": row.get("timezone"),
+        "client_id": row.get("client_id"),
         "created_at": _iso_datetime(row.get("created_at")),
         "updated_at": _iso_datetime(row.get("updated_at")),
     }

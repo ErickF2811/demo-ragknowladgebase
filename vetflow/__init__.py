@@ -9,6 +9,7 @@ from .routes.files import files_bp
 from .routes.health import health_bp
 from .routes.ui import ui_bp
 from .routes.whatsapp import whatsapp_bp
+from .routes.clientes import clientes_bp
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -35,6 +36,7 @@ def create_app() -> Flask:
     app.register_blueprint(calendar_bp)
     app.register_blueprint(health_bp)
     app.register_blueprint(whatsapp_bp)
+    app.register_blueprint(clientes_bp)
 
     @app.context_processor
     def inject_globals():
