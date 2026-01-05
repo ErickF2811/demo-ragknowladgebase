@@ -14,6 +14,13 @@ from flask import (
 )
 
 from ..config import config
+from ..auth import (
+    AuthError,
+    is_auth_required,
+    is_service_api_key_valid,
+    resolve_user_from_token,
+    require_authenticated_request,
+)
 from ..services.calendar import get_status_choices, list_appointments, STATUS_LABELS
 from ..services.files import list_files
 from ..services.workspaces import (
@@ -61,14 +68,28 @@ def ensure_workspace_from_slug(slug: str):
     if not slug:
         return None
     workspace = get_workspace_by_key(slug)
-    if workspace:
-        set_workspace_context(workspace)
+    if not workspace:
+        return None
+
+    if is_auth_required() and not is_service_api_key_valid():
+        user_email, _ = _resolve_current_user()
+        if not user_email:
+            return None
+        role = get_member_role(workspace["id"], user_email)
+        if not role:
+            return None
+        # Guardar rol de membership para UI (no es autorizacion adicional; es solo display)
+        session["current_membership_role"] = role
+
+    set_workspace_context(workspace)
     return workspace
 
 
 def _resolve_current_user():
     email = session.get("current_user_email")
     name = session.get("current_user_name")
+    if getattr(config, "CLERK_AUTH_REQUIRED", False):
+        return email, name
     header_email = request.headers.get("X-User-Email")
     header_name = request.headers.get("X-User-Name")
     qs_email = request.args.get("email")
@@ -167,11 +188,21 @@ def workspace_by_slug(slug: str):
 
 @ui_bp.route("/workspaces", methods=["POST"])
 def create_workspace_route():
+    try:
+        require_authenticated_request()
+    except AuthError as ex:
+        flash(str(ex), "danger")
+        return redirect(url_for("ui.index"))
     name = (request.form.get("workspace_name") or "").strip()
     owner_email = (request.form.get("owner_email") or "").strip()
     owner_name = (request.form.get("owner_name") or "").strip() or None
     description = (request.form.get("workspace_description") or "").strip() or None
     slug_hint = (request.form.get("workspace_slug") or "").strip() or None
+
+    if is_auth_required():
+        session_email, session_name = _resolve_current_user()
+        owner_email = session_email or owner_email
+        owner_name = session_name or owner_name
 
     if not owner_email:
         fallback_email, fallback_name = _resolve_current_user()
@@ -197,6 +228,11 @@ def create_workspace_route():
 @ui_bp.route("/workspaces/<workspace_id>/delete", methods=["POST"])
 @ui_bp.route("/workspaces/delete", methods=["POST"])
 def delete_workspace_route(workspace_id: str = None):
+    try:
+        require_authenticated_request()
+    except AuthError as ex:
+        flash(str(ex), "danger")
+        return redirect(url_for("ui.index"))
     target_id = workspace_id or request.form.get("workspace_id")
     if not target_id:
         flash("Selecciona un workspace para eliminar.", "warning")
@@ -231,6 +267,10 @@ def delete_workspace_route(workspace_id: str = None):
 
 @ui_bp.route("/w/<slug>/api/invites", methods=["POST"])
 def create_invite_api(slug: str):
+    try:
+        require_authenticated_request()
+    except AuthError as ex:
+        return jsonify({"error": ex.code, "message": str(ex)}), ex.status_code
     workspace = ensure_workspace_from_slug(slug)
     if not workspace:
         return jsonify({"error": "workspace_not_found"}), 404
@@ -296,28 +336,40 @@ def set_clerk_session():
             "current_user_name",
             "current_user_role",
             "current_user_clerk_id",
+            "current_membership_role",
             "workspace_id",
             "workspace_schema",
         ]:
             session.pop(key, None)
         return jsonify({"ok": True})
+
+    auth_header = request.headers.get("Authorization") or ""
+    token = ""
+    if auth_header.lower().startswith("bearer "):
+        token = auth_header.split(" ", 1)[1].strip()
+
+    if not token:
+        return jsonify({"error": "token_requerido"}), 401
+
+    try:
+        identity = resolve_user_from_token(token)
+    except AuthError as ex:
+        return jsonify({"error": ex.code, "message": str(ex)}), ex.status_code
+
     payload = request.get_json(silent=True) or {}
-    email = (payload.get("email") or "").strip().lower()
-    name = (payload.get("name") or "").strip() or None
-    clerk_id = (payload.get("clerk_id") or "").strip() or None
     role = (payload.get("role") or "").strip() or None
 
-    if not email:
-        return jsonify({"error": "email_requerido"}), 400
+    email = identity["email"]
+    name = identity.get("name")
+    clerk_id = identity.get("clerk_id")
 
     session["current_user_email"] = email
     session["current_user_name"] = name
+    session["current_user_clerk_id"] = clerk_id
     if role:
         session["current_user_role"] = role
     else:
         session.setdefault("current_user_role", "Miembro")
-    if clerk_id:
-        session["current_user_clerk_id"] = clerk_id
 
     ensure_default_workspace_for_user(email, name)
     return jsonify({"ok": True})
@@ -325,10 +377,23 @@ def set_clerk_session():
 
 @ui_bp.route("/api/invites/accept", methods=["POST"])
 def accept_invite_api():
+    try:
+        require_authenticated_request()
+    except AuthError as ex:
+        return jsonify({"error": ex.code, "message": str(ex)}), ex.status_code
     payload = request.get_json(silent=True) or {}
     code = (payload.get("code") or "").strip()
     email = (payload.get("email") or "").strip()
     name = (payload.get("name") or "").strip() or None
+
+    if is_auth_required():
+        session_email, session_name = _resolve_current_user()
+        if session_email:
+            if email and email.strip().lower() != session_email.strip().lower():
+                return jsonify({"error": "email_no_coincide_con_sesion"}), 403
+            email = session_email
+        if session_name and not name:
+            name = session_name
 
     # Fallback al usuario actual si no envian email
     if not email:
@@ -357,6 +422,10 @@ def accept_invite_api():
 
 @ui_bp.route("/w/<slug>/api/members/remove", methods=["POST"])
 def remove_member_api(slug: str):
+    try:
+        require_authenticated_request()
+    except AuthError as ex:
+        return jsonify({"error": ex.code, "message": str(ex)}), ex.status_code
     workspace = ensure_workspace_from_slug(slug)
     if not workspace:
         return jsonify({"error": "workspace_not_found"}), 404

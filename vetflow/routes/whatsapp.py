@@ -2,6 +2,7 @@ import logging
 
 from flask import Blueprint, jsonify, request, session
 
+from ..auth import AuthError, require_authenticated_request
 from ..config import config
 from ..services.evolution import (
     EvolutionApiError,
@@ -14,6 +15,16 @@ from .ui import ensure_workspace_from_slug
 logger = logging.getLogger(__name__)
 
 whatsapp_bp = Blueprint("whatsapp", __name__)
+
+
+@whatsapp_bp.before_request
+def _auth_guard():
+    if request.method == "OPTIONS":
+        return ("", 204)
+    try:
+        require_authenticated_request()
+    except AuthError as ex:
+        return jsonify({"error": ex.code, "message": str(ex)}), ex.status_code
 
 
 def _current_workspace_slug_from_session():

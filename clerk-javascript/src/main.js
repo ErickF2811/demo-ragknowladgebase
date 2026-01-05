@@ -43,11 +43,16 @@ const renderSignedIn = async (appElement, clerk) => {
   `
 
   try {
+    const token = await clerk?.session?.getToken?.()
+    if (!token) {
+      throw new Error('No se pudo obtener el token de Clerk (session.getToken).')
+    }
     await fetch(`${panelUrl.replace(/\/$/, '')}/session/clerk`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ email, name: fullName, clerk_id: clerkId }),
       credentials: 'include',

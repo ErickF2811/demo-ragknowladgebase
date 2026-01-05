@@ -31,6 +31,13 @@ class Config:
         if not clerk_key:
             clerk_key = os.getenv("VITE_CLERK_PUBLISHABLE_KEY", "")
         self.CLERK_PUBLISHABLE_KEY = clerk_key
+        self.CLERK_SECRET_KEY = os.getenv("CLERK_SECRET_KEY", "")
+        self.CLERK_ISSUER = os.getenv("CLERK_ISSUER", "")
+        self.CLERK_JWKS_URL = os.getenv("CLERK_JWKS_URL", "")
+        auth_required_default = "1" if self.CLERK_PUBLISHABLE_KEY else "0"
+        auth_required_raw = os.getenv("CLERK_AUTH_REQUIRED", auth_required_default).lower().strip()
+        self.CLERK_AUTH_REQUIRED = auth_required_raw in ("1", "true", "yes", "on")
+        self.VETFLOW_API_KEY = os.getenv("VETFLOW_API_KEY", "")
         cors_raw = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:5173")
         self.CORS_ALLOWED_ORIGINS = [o.strip() for o in cors_raw.split(",") if o.strip()]
         self.API_HOST = os.getenv("API_HOST", "0.0.0.0")

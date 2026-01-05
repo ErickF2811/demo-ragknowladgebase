@@ -55,23 +55,32 @@
   }
 
   const syncSession = async (user) => {
-    const email =
-      user?.primaryEmailAddress?.emailAddress || user?.emailAddresses?.[0]?.emailAddress
-    const name = user?.fullName || `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim()
-    const clerkId = user?.id || null
     const role = deriveRole(user)
-    if (!email) return
     try {
-      await fetch('/session/clerk', {
+      const clerk = window.Clerk
+      const token = await clerk?.session?.getToken?.()
+      if (!token) {
+        return { ok: false, message: 'No se pudo obtener el token de Clerk (session.getToken).' }
+      }
+
+      const res = await fetch('/session/clerk', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ email, name, clerk_id: clerkId, role }),
+        body: JSON.stringify({ role }),
       })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        const msg = data?.message || data?.error || res.statusText
+        return { ok: false, message: `No se pudo autenticar en el backend: ${msg}` }
+      }
+      return { ok: true }
     } catch (err) {
       console.error('No se pudo sincronizar la sesion con el backend', err)
+      return { ok: false, message: 'No se pudo sincronizar la sesion con el backend.' }
     }
   }
 
@@ -127,8 +136,12 @@
       userButtonMounted = true
     }
 
-    const handleSignedIn = async () => {
-      await syncSession(clerk.user)
+  const handleSignedIn = async () => {
+      const syncResult = await syncSession(clerk.user)
+      if (!syncResult?.ok) {
+        renderClerkError(syncResult?.message || 'No se pudo autenticar en el backend.')
+        return
+      }
 
       const backendEmailMeta = document.querySelector('meta[name="backend-user-email"]')
       const backendEmail = backendEmailMeta ? backendEmailMeta.getAttribute('content') : null

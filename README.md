@@ -29,6 +29,11 @@ CORE_SCHEMA=vetflow_core
 WORKSPACE_SCHEMA_PREFIX=ws
 DEFAULT_OWNER_EMAIL=demo@vetflow.local
 DEFAULT_OWNER_NAME=Demo Vetflow
+CLERK_PUBLISHABLE_KEY=pk_test_...
+CLERK_SECRET_KEY=sk_test_...
+CLERK_AUTH_REQUIRED=1
+# (Opcional) API key para n8n/bots sin Clerk
+VETFLOW_API_KEY=
 N8N_WEBHOOK_URL=https://tu-n8n/webhook/rag-files
 N8N_DELETE_WEBHOOK_URL=https://tu-n8n/webhook/rag-files-deleted
 N8N_NEW_WORKSPACE_WEBHOOK_URL=https://tu-n8n/webhook/newWorkpace
@@ -62,19 +67,25 @@ Abre `http://localhost:5000`.
 ## API JSON
 Fechas en ISO8601, ejemplo `2025-01-15T10:00:00Z`.
 
+### Autenticación (APIs)
+- **Clerk (usuarios)**: el navegador obtiene un JWT y llama `POST /session/clerk` con `Authorization: Bearer <JWT>`. El backend valida (JWKS) y crea una sesión (cookie). Las llamadas al mismo origin (panel web) usan esa cookie automáticamente.
+- **API Key (n8n/bots)**: define `VETFLOW_API_KEY` y envía `X-API-Key: <tu-key>` en cada request al panel. Recomendado para integraciones server-to-server (no requiere cookies).
+- **Desactivado (solo dev)**: con `CLERK_AUTH_REQUIRED=0` las APIs quedan públicas.
+
 ## Workspaces y multi-tenancy
 - Tras actualizar el repositorio vuelve a ejecutar `psql "POSTGRES_DSN" -f schema.sql` para asegurarte de que el tipo `vetflow_core.appointment_status`, la función `ensure_workspace_schema` y las tablas globales existen. El script es idempotente.
 - El schema `schema.sql` crea `vetflow_core`, las tablas (`app_users`, `workspaces`, `workspace_members`, `workspace_invites`) y la función `vetflow_core.ensure_workspace_schema(schema_name text)` que provisiona las tablas `files`/`appointments` dentro de un schema dedicado por workspace.
 - Además, `ensure_workspace_schema` provisiona `clients` y `client_notes` y añade las columnas `appointments.timezone` y `appointments.client_id` (nullable) dentro de cada workspace.
 - Cada workspace se asocia a un correo (idealmente Gmail) y genera un schema único `ws_<slug>_<hash>`. El backend invoca `ensure_workspace_schema` automáticamente al crear un workspace para garantizar que existan tablas y tipos.
-- Las variables nuevas (`CORE_SCHEMA`, `WORKSPACE_SCHEMA_PREFIX`, `DEFAULT_OWNER_EMAIL`, `DEFAULT_OWNER_NAME`, `CLERK_PUBLISHABLE_KEY`) controlan dónde se guardan los metadatos, cómo se nombran los schemas y qué usuario se usa como fallback cuando la UI no envía cabeceras `X-User-Email` / `X-User-Name`. Al definir `CLERK_PUBLISHABLE_KEY`, el overlay de Clerk protege todo el panel y sincroniza la sesión mediante `POST /session/clerk` antes de mostrar los datos; además, se crea automáticamente un workspace por defecto para ese usuario.
-- Desde el panel (ruta `/`) puedes seleccionar workspaces existentes, ver sus métricas (archivos/citas) y abrir un modal para crear más. La sesión recuerda el último workspace elegido y todas las operaciones (archivos, calendario, webhooks) se ejecutan dentro de ese schema. Si invocas la UI con `?email=tu_gmail` (o enviando la cabecera `X-User-Email`), Vetflow te mostrará únicamente los workspaces asociados a esa cuenta.
+- Con Clerk activo (`CLERK_PUBLISHABLE_KEY`, `CLERK_AUTH_REQUIRED=1`), el panel exige iniciar sesión y sincroniza la sesión en `POST /session/clerk` enviando `Authorization: Bearer <JWT>`. El backend valida el JWT (JWKS), registra el usuario (asociando `clerk_id`) y crea un workspace por defecto si no existe.
+- Desde el panel (ruta `/`) puedes seleccionar workspaces existentes, ver sus métricas (archivos/citas) y abrir un modal para crear más. La sesión recuerda el último workspace elegido y todas las operaciones (archivos, calendario, webhooks) se ejecutan dentro de ese schema.
 - Las APIs multi-tenant se consumen con prefijo de workspace: `/w/<schema_name>/api/...` (calendario, archivos, SAS), evitando colisiones de sesión entre workspaces. `schema_name` tiene forma `ws_<slug>_<hash>`.
 
 ### Diagrama de arquitectura (creación de workspace)
 ```mermaid
 flowchart LR
-    Clerk[Clerk + App Vite] -->|headers X-User-Email/X-User-Name| FlaskVetflow
+    Clerk[Clerk navegador] -->|JWT Bearer| SessionEndpoint[POST /session/clerk]
+    SessionEndpoint --> FlaskVetflow
     subgraph Backend
         FlaskVetflow[Flask Vetflow<br/>/ui + /api]
         Service[Servicio Workspaces]
@@ -153,8 +164,14 @@ erDiagram
     client_id = 1  # opcional
   } | ConvertTo-Json -Compress
 
+  # Para n8n/bots: usa API Key (X-API-Key). En el navegador (panel) no hace falta porque hay cookie de sesión.
+  $headers = @{
+    "X-API-Key" = "TU_API_KEY"
+  }
+
   Invoke-RestMethod -Method Post `
     -Uri "http://localhost:5000/w/demo-vetflow/api/calendar" `
+    -Headers $headers `
     -Body $payload `
     -ContentType "application/json"
   ```
@@ -167,8 +184,13 @@ erDiagram
     client_id = $null  # opcional: quitar asociacion
   } | ConvertTo-Json -Compress
 
+  $headers = @{
+    "X-API-Key" = "TU_API_KEY"
+  }
+
   Invoke-RestMethod -Method Put `
     -Uri "http://localhost:5000/w/demo-vetflow/api/calendar/1" `
+    -Headers $headers `
     -Body $payload `
     -ContentType "application/json"
   ```
@@ -216,8 +238,8 @@ erDiagram
 - Nota UI: los inputs `datetime-local` del modal de creación/edición usan formato local `YYYY-MM-DDTHH:MM`; el panel convierte internamente a ISO con offset para persistir correctamente.
 
 ### Archivos
-- Eliminar: `DELETE /api/files/<id>` (marca `status=deleting`, notifica `N8N_DELETE_WEBHOOK_URL`; n8n debe borrar y actualizar el estado a `deleted/expired` vía `PUT /api/files/<id>`).
-- Actualizar metadatos/status (para n8n o bots): `PUT /api/files/<id>`
+- Eliminar: `DELETE /w/<schema_name>/api/files/<id>` (o `/api/files/<id>` para el schema default) marca `status=deleting` y notifica `N8N_DELETE_WEBHOOK_URL`.
+- Actualizar metadatos/status (para n8n o bots): `PUT /w/<schema_name>/api/files/<id>` (o `/api/files/<id>` para el schema default)
   En PowerShell:
   ```powershell
   $payload = @{
@@ -227,8 +249,13 @@ erDiagram
     processed_at = "2025-01-16T12:00:00Z"
   } | ConvertTo-Json -Compress
 
+  $headers = @{
+    "X-API-Key" = "TU_API_KEY"
+  }
+
   Invoke-RestMethod -Method Put `
-    -Uri "http://localhost:5000/api/files/1" `
+    -Uri "http://localhost:5000/w/demo-vetflow/api/files/1" `
+    -Headers $headers `
     -Body $payload `
     -ContentType "application/json"
   ```
@@ -239,10 +266,15 @@ erDiagram
 - (Opcional) `N8N_NEW_WORKSPACE_WEBHOOK_URL`: se llama al crear un workspace para que n8n haga aprovisionamiento externo.
   - Si usas n8n en **modo test** (`/webhook-test/...`), el webhook solo responde cuando el workflow está en **Listening for test event** y la URL suele incluir un identificador; si no, verás `404 ... webhook is not registered`.
   - Para producción usa `/webhook/...` con el workflow **activo** (Activated) para que siempre reciba eventos.
+- **Autenticación (n8n -> panel)**
+  - Define `VETFLOW_API_KEY` en el panel y agrega en tu nodo **HTTP Request** el header `X-API-Key: <VETFLOW_API_KEY>`.
+  - Usa el campo `schema` que llega en el webhook para armar URLs multi-tenant:
+    - `PUT http://<panel>/w/<schema_name>/api/files/<id>`
+    - `GET http://<panel>/w/<schema_name>/file/<id>/sas`
 - **Cuándo se llama a n8n**
   - **Al subir un archivo** (`POST /upload`): se crea el registro con `status=uploaded` y luego se intenta notificar a n8n con `N8N_WEBHOOK_URL` (best-effort).
   - **Al pulsar "Enviar al bot"** (UI): llama explícitamente a `N8N_WEBHOOK_URL`; si n8n responde `2xx` el panel actualiza el registro a `status=processing`.
-  - **Al solicitar borrado** (`POST /files/<id>/delete` o `DELETE /api/files/<id>`): primero marca el registro como `status=deleting` y luego intenta notificar a n8n con `N8N_DELETE_WEBHOOK_URL`.
+  - **Al solicitar borrado** (`POST /files/<id>/delete` o `DELETE /w/<schema_name>/api/files/<id>`): primero marca el registro como `status=deleting` y luego intenta notificar a n8n con `N8N_DELETE_WEBHOOK_URL`.
 - **Qué se envía (payload JSON)**
   - Ingesta/proceso: `file_id`, `filename`, `blob_path`, `blob_url`, `folder`, `tags`, `notes`, `status`, `schema`.
   - Borrado: `file_id`, `filename`, `blob_path`, `blob_url`, `container`, `schema`.
@@ -254,8 +286,8 @@ erDiagram
 - **Nota sobre `webhook-test`**
   - Si usas URLs tipo `/webhook-test/...` y n8n responde `404`, el backend intenta automáticamente la variante de producción `/webhook/...` (y añade un mensaje de ayuda en la respuesta/UI).
 - **Callback desde n8n al panel**
-  - Tras procesar o borrar, n8n debe llamar `PUT /api/files/<id>` para actualizar `status`, `tags`, `notes`, `processed_at` (por ejemplo `processed`, `done`, `deleted`, `expired`).
-  - Para descargar el blob, n8n puede usar `blob_path` + una SAS generada por el panel (`GET /file/<id>/sas` o `/w/<schema_name>/file/<id>/sas`).
+  - Tras procesar o borrar, n8n debe llamar `PUT /w/<schema_name>/api/files/<id>` (usa el `schema` del webhook) para actualizar `status`, `tags`, `notes`, `processed_at` (por ejemplo `processed`, `done`, `deleted`, `expired`). Incluye `X-API-Key`.
+  - Para descargar el blob, n8n puede generar una SAS con `GET /w/<schema_name>/file/<id>/sas` (incluye `X-API-Key`) y luego descargar la `url` resultante.
 
 ## Integración WhatsApp (Evolution API)
 - Variables:
@@ -322,7 +354,7 @@ sequenceDiagram
 - Para SAS se requieren `AccountName` y `AccountKey` en la cadena de conexión.
 - Servir siempre vía Flask; abrir el HTML directo mostrará llaves Jinja.
 ## Frontend Clerk (Vite + ClerkJS)
-El subdirectorio `clerk-javascript/` contiene una app Vite (Vanilla JS) que monta el flujo de autenticación de Clerk. Puedes seguir usándola como demo independiente (mantiene el `<iframe>`), pero el panel Flask ya incorpora Clerk de forma nativa mediante `@clerk/clerk-js`, por lo que basta con definir `CLERK_PUBLISHABLE_KEY` en tu `.env` y abrir `http://localhost:5000`.
+El subdirectorio `clerk-javascript/` contiene una app Vite (Vanilla JS) que monta el flujo de autenticación de Clerk. Puedes seguir usándola como demo independiente (mantiene el `<iframe>`), pero el panel Flask ya incorpora Clerk de forma nativa mediante `@clerk/clerk-js`. Para validar el JWT en el backend define `CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY` y deja `CLERK_AUTH_REQUIRED=1` en tu `.env`.
 
 ### Producción: evitar “No se pudo cargar Clerk… dominio no autorizado”
 Ese mensaje aparece cuando el **origin** desde donde abres el panel (por ejemplo `https://panel.tudominio.com` o `http://IP:5000`) **no está permitido** por tu instancia de Clerk, o cuando usas una key que no corresponde al ambiente.
@@ -422,7 +454,7 @@ Para llevar la imagen a un registro (ej. Docker Hub, Azure CR, AWS ECR):
 1. **Construir la imagen**:
    ```bash
    # Sintaxis: docker build -t <usuario>/<nombre-imagen>:<tag> .
-   docker build -t erifcamp/flow-panel:v1.0.0 .
+   docker build -t erifcamp/flow-panel:v1.2.0 .
    ```
 
 2. **Login en el registro**:

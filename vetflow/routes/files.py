@@ -1,6 +1,7 @@
 import logging
 from flask import Blueprint, jsonify, redirect, request, flash, url_for
 
+from ..auth import AuthError, require_authenticated_request
 from ..services.files import (
     create_file,
     delete_file,
@@ -14,6 +15,20 @@ from .ui import ensure_workspace_from_slug
 logger = logging.getLogger(__name__)
 
 files_bp = Blueprint("files", __name__)
+
+
+@files_bp.before_request
+def _auth_guard():
+    if request.method == "OPTIONS":
+        return ("", 204)
+    try:
+        require_authenticated_request()
+    except AuthError as ex:
+        accept = request.headers.get("Accept") or ""
+        if "text/html" in accept:
+            flash(str(ex), "danger")
+            return redirect(url_for("ui.index"))
+        return jsonify({"error": ex.code, "message": str(ex)}), ex.status_code
 
 
 @files_bp.route("/upload", methods=["POST"])

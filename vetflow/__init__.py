@@ -53,7 +53,7 @@ def create_app() -> Flask:
         if origin and (allow_any or origin in config.CORS_ALLOWED_ORIGINS):
             response.headers["Access-Control-Allow-Origin"] = origin
             response.headers["Access-Control-Allow-Credentials"] = "true"
-            response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+            response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-API-Key, X-Vetflow-Api-Key"
             response.headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE,OPTIONS"
         return response
 

@@ -2,11 +2,26 @@ import json
 import logging
 from flask import Blueprint, flash, jsonify, redirect, request, url_for
 
+from ..auth import AuthError, require_authenticated_request
 from ..services import calendar as calendar_service
 from .ui import ensure_workspace_from_slug
 
 calendar_bp = Blueprint("calendar", __name__)
 logger = logging.getLogger(__name__)
+
+
+@calendar_bp.before_request
+def _auth_guard():
+    if request.method == "OPTIONS":
+        return ("", 204)
+    try:
+        require_authenticated_request()
+    except AuthError as ex:
+        accept = request.headers.get("Accept") or ""
+        if "text/html" in accept:
+            flash(str(ex), "danger")
+            return redirect(url_for("ui.index"))
+        return jsonify({"error": ex.code, "message": str(ex)}), ex.status_code
 
 
 def _parse_payload():

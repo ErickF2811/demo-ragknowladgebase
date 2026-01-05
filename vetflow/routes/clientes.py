@@ -2,12 +2,23 @@ import logging
 
 from flask import Blueprint, jsonify, request
 
+from ..auth import AuthError, require_authenticated_request
 from ..services import clientes as clientes_service
 from .ui import ensure_workspace_from_slug
 
 logger = logging.getLogger(__name__)
 
 clientes_bp = Blueprint("clientes", __name__)
+
+
+@clientes_bp.before_request
+def _auth_guard():
+    if request.method == "OPTIONS":
+        return ("", 204)
+    try:
+        require_authenticated_request()
+    except AuthError as ex:
+        return jsonify({"error": ex.code, "message": str(ex)}), ex.status_code
 
 
 def _json():
