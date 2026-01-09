@@ -212,6 +212,22 @@ erDiagram
 - Agregar nota: `POST /w/<schema_name>/api/clientes/<client_id>/notas`
 - Crear cita asociada: `POST /w/<schema_name>/api/clientes/<client_id>/citas` (crea en `appointments` con `client_id`)
 
+**Ejemplo curl (crear cliente)**
+```bash
+curl -X POST "http://localhost:5000/w/demo-vetflow/api/clientes" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: TU_API_KEY" \
+  -d '{
+    "full_name": "Maria Perez",
+    "id_type": "cedula",
+    "id_number": "1234567890",
+    "phone": "+57 300 123 4567",
+    "email": "maria@example.com",
+    "address": "Calle 1 #2-3",
+    "notes": "Cliente nuevo"
+  }'
+```
+
 **UI**
 - Nueva pestaña **Gestionar clientes**: CRUD, notas y citas por cliente.
 - En el modal de crear/editar cita del **Calendario** existe el selector **Cliente (opcional)** que guarda `appointments.client_id`.

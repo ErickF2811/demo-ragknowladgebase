@@ -21,7 +21,7 @@ from ..auth import (
     resolve_user_from_token,
     require_authenticated_request,
 )
-from ..services.calendar import get_status_choices, list_appointments, STATUS_LABELS
+from ..services.calendar import get_status_choices, list_appointments, list_upcoming_appointments, STATUS_LABELS
 from ..services.files import list_files
 from ..services.workspaces import (
     create_workspace,
@@ -139,12 +139,14 @@ def _render_dashboard(workspace_slug: Optional[str] = None):
 
     files = []
     appointments = []
+    upcoming_appointments = []
     members = []
     membership_role = None
     if current_workspace:
         set_workspace_context(current_workspace)
         files = list_files()
         appointments = list_appointments()
+        upcoming_appointments = list_upcoming_appointments()
         members = list_members(current_workspace["id"])
         if user_email:
             membership_role = get_member_role(current_workspace["id"], user_email)
@@ -156,6 +158,7 @@ def _render_dashboard(workspace_slug: Optional[str] = None):
         "index.html",
         files=files,
         appointments=appointments,
+        appointments_upcoming=upcoming_appointments,
         appointment_statuses=get_status_choices(),
         appointment_status_labels=STATUS_LABELS,
         workspaces=workspaces,

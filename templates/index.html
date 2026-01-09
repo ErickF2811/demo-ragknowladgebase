@@ -246,6 +246,141 @@
     color: #2563eb;
   }
 
+  /* Summary workspace */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.9fr);
+    gap: 1.25rem;
+    align-items: stretch;
+  }
+
+  .summary-card {
+    border-radius: 18px;
+    border: 1px solid var(--vet-border-light);
+    background: var(--vet-bg-surface);
+    box-shadow: var(--vet-shadow-sm);
+  }
+
+  .summary-card-body {
+    padding: 1.1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    height: 100%;
+  }
+
+  .summary-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+
+  .summary-title {
+    font-weight: 800;
+    color: var(--vet-text-main);
+    letter-spacing: -0.02em;
+  }
+
+  .summary-subtitle {
+    margin: 0;
+    font-size: 0.82rem;
+    color: var(--vet-text-muted);
+  }
+
+  .summary-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    max-height: 520px;
+    overflow-y: auto;
+    padding-right: 0.25rem;
+  }
+
+  .summary-list .appointment-card {
+    margin-bottom: 0;
+    border-radius: 14px;
+  }
+
+  .summary-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .summary-kpis {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  .summary-kpi {
+    padding: 0.85rem 0.95rem;
+    border-radius: 14px;
+    background: linear-gradient(135deg, rgba(111, 61, 244, 0.12), rgba(244, 114, 182, 0.08));
+    border: 1px solid var(--vet-border-light);
+  }
+
+  .summary-kpi-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--vet-text-muted);
+    margin-bottom: 0.25rem;
+  }
+
+  .summary-kpi-value {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--vet-text-main);
+  }
+
+  .summary-next {
+    padding: 1rem 1.1rem;
+    border-radius: 16px;
+    background: linear-gradient(140deg, rgba(111, 61, 244, 0.16), rgba(111, 61, 244, 0.05));
+    border: 1px solid var(--vet-border-light);
+  }
+
+  .summary-next .summary-title {
+    font-size: 1rem;
+  }
+
+  .summary-next-name {
+    font-weight: 700;
+    color: var(--vet-text-main);
+    margin-bottom: 0.25rem;
+  }
+
+  .summary-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .summary-action {
+    width: 100%;
+    text-align: left;
+    border-radius: 12px;
+    border: 1px solid var(--vet-border-light);
+    background: var(--vet-bg-subtle);
+    color: var(--vet-primary);
+    font-weight: 600;
+    padding: 0.6rem 0.85rem;
+    transition: all 0.2s ease;
+  }
+
+  .summary-action:hover {
+    background: rgba(111, 61, 244, 0.12);
+    color: var(--vet-primary-strong);
+  }
+
+  @media (max-width: 992px) {
+    .summary-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
   /* FullCalendar theme to match panel */
   #fullCalendarRoot .fc {
     --fc-border-color: rgba(111, 61, 244, 0.16);
@@ -355,8 +490,7 @@
     <button class="side-link" data-tab-target="clients">Gestionar clientes</button>
     <button class="side-link" data-tab-target="whatsapp">Integración WhatsApp</button>
     {% if current_workspace %}
-    <a class="side-link" href="{{ url_for('ui.workspace_by_slug', slug=current_workspace.schema_name) }}">Resumen
-      workspace</a>
+    <button class="side-link" data-tab-target="summary" type="button">Resumen workspace</button>
     {% endif %}
   </aside>
   <div class="side-overlay" id="sideOverlay"></div>
@@ -415,6 +549,155 @@
     {% endwith %}
 
     <div class="tab-content">
+      <div class="tab-pane fade" id="summary" role="tabpanel">
+        <div class="summary-grid" data-summary-panel data-workspace-slug="{{ current_workspace.schema_name if current_workspace else '' }}">
+          <div class="summary-card">
+            <div class="summary-card-body">
+              <div class="summary-card-header">
+                <div>
+                  <div class="summary-title">Proximas citas</div>
+                  <p class="summary-subtitle">Desde ahora en adelante</p>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                  <span class="badge rounded-pill bg-primary-subtle text-primary-emphasis" data-summary-upcoming-count>
+                    {{ appointments_upcoming|default(appointments)|length }}
+                  </span>
+                  <button class="btn btn-sm btn-outline-primary" type="button" data-tab-target="calendar">Ver calendario</button>
+                </div>
+              </div>
+              <div class="summary-list" data-summary-appointments-list>
+                {% for c in appointments_upcoming|default(appointments) %}
+                <div class="appointment-card" data-appointment-id="{{ c.id }}">
+                  <div class="flex-grow-1">
+                    <div class="d-flex justify-content-between align-items-start mb-1">
+                      <div class="app-title text-truncate" style="max-width: 220px;" title="{{ c.title }}">{{ c.title }}</div>
+                      <span class="status-badge status-{{ c.status|default('programada') }}"
+                        style="font-size:0.65rem; padding: 0.1rem 0.4rem;">
+                        {{ appointment_status_labels[c.status]|default(c.status|capitalize) }}
+                      </span>
+                    </div>
+                    <div class="app-time">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12 6 12 12 16 14" />
+                      </svg>
+                      <span class="appointment-date opacity-0 transition-opacity" data-datetime="{{ c.start_time }}">{{
+                        (c.start_time|string)[:10] }}</span>
+                      <span class="text-muted mx-1">-</span>
+                      <span class="appointment-hour opacity-0 transition-opacity" data-datetime="{{ c.start_time }}">{{
+                        (c.start_time|string)[11:16] }}</span>
+                    </div>
+                  </div>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-5">
+                  <div class="mb-2 opacity-50">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                      <line x1="16" y1="2" x2="16" y2="6" />
+                      <line x1="8" y1="2" x2="8" y2="6" />
+                      <line x1="3" y1="10" x2="21" y2="10" />
+                    </svg>
+                  </div>
+                  <div class="small fw-semibold">Sin citas programadas</div>
+                  <div class="small opacity-75">para este periodo</div>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+
+          <div class="summary-stack">
+            <div class="summary-card">
+              <div class="summary-card-body">
+                <div class="summary-card-header">
+                  <div>
+                    <div class="summary-title">Resumen rapido</div>
+                    <p class="summary-subtitle">Estado del workspace</p>
+                  </div>
+                </div>
+                <div class="summary-kpis">
+                  <div class="summary-kpi">
+                    <div class="summary-kpi-label">Archivos</div>
+                  <div class="summary-kpi-value">{{ files|length }}</div>
+                </div>
+                <div class="summary-kpi">
+                  <div class="summary-kpi-label">Citas totales</div>
+                  <div class="summary-kpi-value" data-summary-total-count>{{ appointments|length }}</div>
+                </div>
+                <div class="summary-kpi">
+                  <div class="summary-kpi-label">Proximas</div>
+                  <div class="summary-kpi-value" data-summary-upcoming-kpi>{{ appointments_upcoming|default(appointments)|length }}</div>
+                </div>
+                <div class="summary-kpi">
+                  <div class="summary-kpi-label">Miembros</div>
+                  <div class="summary-kpi-value">{{ workspace_members|length }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="summary-card">
+              <div class="summary-card-body">
+                <div class="summary-card-header">
+                  <div>
+                    <div class="summary-title">Siguiente cita</div>
+                    <p class="summary-subtitle">La mas cercana en agenda</p>
+                  </div>
+                </div>
+                {% set next_appt = (appointments_upcoming|default(appointments))|first %}
+                {% if next_appt %}
+                <div class="summary-next" data-summary-next>
+                  <div class="d-flex justify-content-between align-items-center mb-1">
+                    <div class="summary-next-name text-truncate" style="max-width: 220px;" title="{{ next_appt.title }}">
+                      {{ next_appt.title }}
+                    </div>
+                    <span class="status-badge status-{{ next_appt.status|default('programada') }}"
+                      style="font-size:0.65rem; padding: 0.1rem 0.4rem;">
+                      {{ appointment_status_labels[next_appt.status]|default(next_appt.status|capitalize) }}
+                    </span>
+                  </div>
+                  <div class="app-time">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="10" />
+                      <polyline points="12 6 12 12 16 14" />
+                    </svg>
+                    <span class="appointment-date opacity-0 transition-opacity" data-datetime="{{ next_appt.start_time }}">{{
+                      (next_appt.start_time|string)[:10] }}</span>
+                    <span class="text-muted mx-1">-</span>
+                    <span class="appointment-hour opacity-0 transition-opacity" data-datetime="{{ next_appt.start_time }}">{{
+                      (next_appt.start_time|string)[11:16] }}</span>
+                  </div>
+                </div>
+                {% else %}
+                <div class="summary-next text-muted" data-summary-next>
+                  No hay citas programadas por ahora.
+                </div>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="summary-card">
+              <div class="summary-card-body">
+                <div class="summary-card-header">
+                  <div>
+                    <div class="summary-title">Accesos rapidos</div>
+                    <p class="summary-subtitle">Ir directo a cada area</p>
+                  </div>
+                </div>
+                <div class="summary-actions">
+                  <button class="summary-action" type="button" data-tab-target="calendar">Calendario</button>
+                  <button class="summary-action" type="button" data-tab-target="files">Archivos</button>
+                  <button class="summary-action" type="button" data-tab-target="clients">Gestionar clientes</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
       <div class="tab-pane fade" id="files" role="tabpanel">
         {% include "partials/files_tab.html" %}
       </div>
@@ -862,6 +1145,192 @@
     // arrancamos colapsado en desktop; en mobile se abre con el overlay
     toggleSide(false);
   });
+</script>
+<script>
+  (() => {
+    const panel = document.querySelector('[data-summary-panel]');
+    if (!panel) return;
+
+    const slug = panel.getAttribute('data-workspace-slug') || '';
+    const apiBase = slug ? `/w/${encodeURIComponent(slug)}/api/calendar` : '/api/calendar';
+    const listEl = panel.querySelector('[data-summary-appointments-list]');
+    const countEl = panel.querySelector('[data-summary-upcoming-count]');
+    const totalEl = panel.querySelector('[data-summary-total-count]');
+    const upcomingEl = panel.querySelector('[data-summary-upcoming-kpi]');
+    const nextEl = panel.querySelector('[data-summary-next]');
+    const refreshMs = 30000;
+    let refreshTimer = null;
+
+    const pad2 = (n) => String(n).padStart(2, '0');
+    const formatDate = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+    const formatTime = (d) => `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+    const parseDate = (value) => {
+      if (!value) return null;
+      const d = new Date(value);
+      return Number.isNaN(d.getTime()) ? null : d;
+    };
+    const escapeHtml = (value) =>
+      String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+
+    const statusLabel = (status) => {
+      const labels = window.vetflowStatusLabels || {};
+      const key = String(status || 'programada').toLowerCase();
+      const fallback = key ? `${key.charAt(0).toUpperCase()}${key.slice(1)}` : 'Programada';
+      return labels[key] || fallback;
+    };
+
+    const emptyHtml = `
+      <div class="text-center text-muted py-5">
+        <div class="mb-2 opacity-50">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="3" y1="10" x2="21" y2="10" />
+          </svg>
+        </div>
+        <div class="small fw-semibold">Sin citas programadas</div>
+        <div class="small opacity-75">para este periodo</div>
+      </div>
+    `;
+
+    const renderAppointment = (appt) => {
+      const title = escapeHtml(appt.title || '(Sin titulo)');
+      const status = String(appt.status || 'programada').toLowerCase();
+      const label = escapeHtml(statusLabel(status));
+      const start = appt.startDate || appt.endDate || null;
+      const dateText = start ? formatDate(start) : '--';
+      const timeText = start ? formatTime(start) : '--:--';
+      const datetime = escapeHtml(appt.start_time || appt.end_time || '');
+
+      return `
+        <div class="appointment-card" data-appointment-id="${escapeHtml(appt.id)}">
+          <div class="flex-grow-1">
+            <div class="d-flex justify-content-between align-items-start mb-1">
+              <div class="app-title text-truncate" style="max-width: 220px;" title="${title}">${title}</div>
+              <span class="status-badge status-${status}" style="font-size:0.65rem; padding: 0.1rem 0.4rem;">
+                ${label}
+              </span>
+            </div>
+            <div class="app-time">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+              <span class="appointment-date" data-datetime="${datetime}">${dateText}</span>
+              <span class="text-muted mx-1">-</span>
+              <span class="appointment-hour" data-datetime="${datetime}">${timeText}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    };
+
+    const renderNext = (appt) => {
+      if (!nextEl) return;
+      if (!appt) {
+        nextEl.classList.add('text-muted');
+        nextEl.innerHTML = 'No hay citas programadas por ahora.';
+        return;
+      }
+      nextEl.classList.remove('text-muted');
+      const title = escapeHtml(appt.title || '(Sin titulo)');
+      const status = String(appt.status || 'programada').toLowerCase();
+      const label = escapeHtml(statusLabel(status));
+      const start = appt.startDate || appt.endDate || null;
+      const dateText = start ? formatDate(start) : '--';
+      const timeText = start ? formatTime(start) : '--:--';
+      const datetime = escapeHtml(appt.start_time || appt.end_time || '');
+      nextEl.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <div class="summary-next-name text-truncate" style="max-width: 220px;" title="${title}">${title}</div>
+          <span class="status-badge status-${status}" style="font-size:0.65rem; padding: 0.1rem 0.4rem;">
+            ${label}
+          </span>
+        </div>
+        <div class="app-time">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="12 6 12 12 16 14" />
+          </svg>
+          <span class="appointment-date" data-datetime="${datetime}">${dateText}</span>
+          <span class="text-muted mx-1">-</span>
+          <span class="appointment-hour" data-datetime="${datetime}">${timeText}</span>
+        </div>
+      `;
+    };
+
+    const updateCounts = (total, upcoming) => {
+      if (countEl) countEl.textContent = String(upcoming);
+      if (totalEl) totalEl.textContent = String(total);
+      if (upcomingEl) upcomingEl.textContent = String(upcoming);
+    };
+
+    const refreshSummary = async () => {
+      try {
+        const res = await fetch(apiBase, { headers: { Accept: 'application/json' }, cache: 'no-store' });
+        const data = await res.json().catch(() => []);
+        if (!res.ok) return;
+        const items = Array.isArray(data) ? data : [];
+        const nowTs = Date.now();
+        const withDates = items.map((appt) => {
+          const startDate = parseDate(appt.start_time);
+          const endDate = parseDate(appt.end_time);
+          const startTs = startDate ? startDate.getTime() : null;
+          const endTs = endDate ? endDate.getTime() : null;
+          const bestTs = Math.max(startTs ?? -Infinity, endTs ?? -Infinity);
+          return { ...appt, startDate, endDate, startTs, endTs, bestTs };
+        });
+        const upcoming = withDates
+          .filter((appt) => Number.isFinite(appt.bestTs) && appt.bestTs >= nowTs)
+          .sort((a, b) => (a.startTs ?? a.bestTs) - (b.startTs ?? b.bestTs));
+
+        updateCounts(items.length, upcoming.length);
+
+        if (listEl) {
+          if (!upcoming.length) {
+            listEl.innerHTML = emptyHtml;
+          } else {
+            listEl.innerHTML = upcoming.slice(0, 50).map(renderAppointment).join('');
+          }
+        }
+        renderNext(upcoming[0]);
+      } catch (err) {
+        console.warn('Summary refresh failed', err);
+      }
+    };
+
+    const startRefreshLoop = () => {
+      if (refreshTimer) return;
+      refreshTimer = setInterval(refreshSummary, refreshMs);
+    };
+
+    const init = () => {
+      refreshSummary();
+      startRefreshLoop();
+      document.querySelectorAll('[data-tab-target="summary"]').forEach((btn) => {
+        btn.addEventListener('click', refreshSummary);
+      });
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) refreshSummary();
+      });
+      window.addEventListener('vetflow:calendarChanged', refreshSummary);
+    };
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  })();
 </script>
 <script>
   (() => {

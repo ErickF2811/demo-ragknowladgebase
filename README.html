@@ -1,0 +1,643 @@
+<!DOCTYPE html><html><head>
+      <title>README</title>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      
+      <link rel="stylesheet" href="file:///c:\Users\USUARIO\.vscode\extensions\shd101wyy.markdown-preview-enhanced-0.8.20\crossnote\dependencies\katex\katex.min.css">
+      
+      
+      <script type="text/javascript" src="file:///c:\Users\USUARIO\.vscode\extensions\shd101wyy.markdown-preview-enhanced-0.8.20\crossnote\dependencies\mermaid\mermaid.min.js" charset="UTF-8"></script>
+      
+      
+      <style>
+      code[class*=language-],pre[class*=language-]{color:#333;background:0 0;font-family:Consolas,"Liberation Mono",Menlo,Courier,monospace;text-align:left;white-space:pre;word-spacing:normal;word-break:normal;word-wrap:normal;line-height:1.4;-moz-tab-size:8;-o-tab-size:8;tab-size:8;-webkit-hyphens:none;-moz-hyphens:none;-ms-hyphens:none;hyphens:none}pre[class*=language-]{padding:.8em;overflow:auto;border-radius:3px;background:#f5f5f5}:not(pre)>code[class*=language-]{padding:.1em;border-radius:.3em;white-space:normal;background:#f5f5f5}.token.blockquote,.token.comment{color:#969896}.token.cdata{color:#183691}.token.doctype,.token.macro.property,.token.punctuation,.token.variable{color:#333}.token.builtin,.token.important,.token.keyword,.token.operator,.token.rule{color:#a71d5d}.token.attr-value,.token.regex,.token.string,.token.url{color:#183691}.token.atrule,.token.boolean,.token.code,.token.command,.token.constant,.token.entity,.token.number,.token.property,.token.symbol{color:#0086b3}.token.prolog,.token.selector,.token.tag{color:#63a35c}.token.attr-name,.token.class,.token.class-name,.token.function,.token.id,.token.namespace,.token.pseudo-class,.token.pseudo-element,.token.url-reference .token.variable{color:#795da3}.token.entity{cursor:help}.token.title,.token.title .token.punctuation{font-weight:700;color:#1d3e81}.token.list{color:#ed6a43}.token.inserted{background-color:#eaffea;color:#55a532}.token.deleted{background-color:#ffecec;color:#bd2c00}.token.bold{font-weight:700}.token.italic{font-style:italic}.language-json .token.property{color:#183691}.language-markup .token.tag .token.punctuation{color:#333}.language-css .token.function,code.language-css{color:#0086b3}.language-yaml .token.atrule{color:#63a35c}code.language-yaml{color:#183691}.language-ruby .token.function{color:#333}.language-markdown .token.url{color:#795da3}.language-makefile .token.symbol{color:#795da3}.language-makefile .token.variable{color:#183691}.language-makefile .token.builtin{color:#0086b3}.language-bash .token.keyword{color:#0086b3}pre[data-line]{position:relative;padding:1em 0 1em 3em}pre[data-line] .line-highlight-wrapper{position:absolute;top:0;left:0;background-color:transparent;display:block;width:100%}pre[data-line] .line-highlight{position:absolute;left:0;right:0;padding:inherit 0;margin-top:1em;background:hsla(24,20%,50%,.08);background:linear-gradient(to right,hsla(24,20%,50%,.1) 70%,hsla(24,20%,50%,0));pointer-events:none;line-height:inherit;white-space:pre}pre[data-line] .line-highlight:before,pre[data-line] .line-highlight[data-end]:after{content:attr(data-start);position:absolute;top:.4em;left:.6em;min-width:1em;padding:0 .5em;background-color:hsla(24,20%,50%,.4);color:#f4f1ef;font:bold 65%/1.5 sans-serif;text-align:center;vertical-align:.3em;border-radius:999px;text-shadow:none;box-shadow:0 1px #fff}pre[data-line] .line-highlight[data-end]:after{content:attr(data-end);top:auto;bottom:.4em}html body{font-family:'Helvetica Neue',Helvetica,'Segoe UI',Arial,freesans,sans-serif;font-size:16px;line-height:1.6;color:#333;background-color:#fff;overflow:initial;box-sizing:border-box;word-wrap:break-word}html body>:first-child{margin-top:0}html body h1,html body h2,html body h3,html body h4,html body h5,html body h6{line-height:1.2;margin-top:1em;margin-bottom:16px;color:#000}html body h1{font-size:2.25em;font-weight:300;padding-bottom:.3em}html body h2{font-size:1.75em;font-weight:400;padding-bottom:.3em}html body h3{font-size:1.5em;font-weight:500}html body h4{font-size:1.25em;font-weight:600}html body h5{font-size:1.1em;font-weight:600}html body h6{font-size:1em;font-weight:600}html body h1,html body h2,html body h3,html body h4,html body h5{font-weight:600}html body h5{font-size:1em}html body h6{color:#5c5c5c}html body strong{color:#000}html body del{color:#5c5c5c}html body a:not([href]){color:inherit;text-decoration:none}html body a{color:#08c;text-decoration:none}html body a:hover{color:#00a3f5;text-decoration:none}html body img{max-width:100%}html body>p{margin-top:0;margin-bottom:16px;word-wrap:break-word}html body>ol,html body>ul{margin-bottom:16px}html body ol,html body ul{padding-left:2em}html body ol.no-list,html body ul.no-list{padding:0;list-style-type:none}html body ol ol,html body ol ul,html body ul ol,html body ul ul{margin-top:0;margin-bottom:0}html body li{margin-bottom:0}html body li.task-list-item{list-style:none}html body li>p{margin-top:0;margin-bottom:0}html body .task-list-item-checkbox{margin:0 .2em .25em -1.8em;vertical-align:middle}html body .task-list-item-checkbox:hover{cursor:pointer}html body blockquote{margin:16px 0;font-size:inherit;padding:0 15px;color:#5c5c5c;background-color:#f0f0f0;border-left:4px solid #d6d6d6}html body blockquote>:first-child{margin-top:0}html body blockquote>:last-child{margin-bottom:0}html body hr{height:4px;margin:32px 0;background-color:#d6d6d6;border:0 none}html body table{margin:10px 0 15px 0;border-collapse:collapse;border-spacing:0;display:block;width:100%;overflow:auto;word-break:normal;word-break:keep-all}html body table th{font-weight:700;color:#000}html body table td,html body table th{border:1px solid #d6d6d6;padding:6px 13px}html body dl{padding:0}html body dl dt{padding:0;margin-top:16px;font-size:1em;font-style:italic;font-weight:700}html body dl dd{padding:0 16px;margin-bottom:16px}html body code{font-family:Menlo,Monaco,Consolas,'Courier New',monospace;font-size:.85em;color:#000;background-color:#f0f0f0;border-radius:3px;padding:.2em 0}html body code::after,html body code::before{letter-spacing:-.2em;content:'\00a0'}html body pre>code{padding:0;margin:0;word-break:normal;white-space:pre;background:0 0;border:0}html body .highlight{margin-bottom:16px}html body .highlight pre,html body pre{padding:1em;overflow:auto;line-height:1.45;border:#d6d6d6;border-radius:3px}html body .highlight pre{margin-bottom:0;word-break:normal}html body pre code,html body pre tt{display:inline;max-width:initial;padding:0;margin:0;overflow:initial;line-height:inherit;word-wrap:normal;background-color:transparent;border:0}html body pre code:after,html body pre code:before,html body pre tt:after,html body pre tt:before{content:normal}html body blockquote,html body dl,html body ol,html body p,html body pre,html body ul{margin-top:0;margin-bottom:16px}html body kbd{color:#000;border:1px solid #d6d6d6;border-bottom:2px solid #c7c7c7;padding:2px 4px;background-color:#f0f0f0;border-radius:3px}@media print{html body{background-color:#fff}html body h1,html body h2,html body h3,html body h4,html body h5,html body h6{color:#000;page-break-after:avoid}html body blockquote{color:#5c5c5c}html body pre{page-break-inside:avoid}html body table{display:table}html body img{display:block;max-width:100%;max-height:100%}html body code,html body pre{word-wrap:break-word;white-space:pre}}.markdown-preview{width:100%;height:100%;box-sizing:border-box}.markdown-preview ul{list-style:disc}.markdown-preview ul ul{list-style:circle}.markdown-preview ul ul ul{list-style:square}.markdown-preview ol{list-style:decimal}.markdown-preview ol ol,.markdown-preview ul ol{list-style-type:lower-roman}.markdown-preview ol ol ol,.markdown-preview ol ul ol,.markdown-preview ul ol ol,.markdown-preview ul ul ol{list-style-type:lower-alpha}.markdown-preview .newpage,.markdown-preview .pagebreak{page-break-before:always}.markdown-preview pre.line-numbers{position:relative;padding-left:3.8em;counter-reset:linenumber}.markdown-preview pre.line-numbers>code{position:relative}.markdown-preview pre.line-numbers .line-numbers-rows{position:absolute;pointer-events:none;top:1em;font-size:100%;left:0;width:3em;letter-spacing:-1px;border-right:1px solid #999;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none}.markdown-preview pre.line-numbers .line-numbers-rows>span{pointer-events:none;display:block;counter-increment:linenumber}.markdown-preview pre.line-numbers .line-numbers-rows>span:before{content:counter(linenumber);color:#999;display:block;padding-right:.8em;text-align:right}.markdown-preview .mathjax-exps .MathJax_Display{text-align:center!important}.markdown-preview:not([data-for=preview]) .code-chunk .code-chunk-btn-group{display:none}.markdown-preview:not([data-for=preview]) .code-chunk .status{display:none}.markdown-preview:not([data-for=preview]) .code-chunk .output-div{margin-bottom:16px}.markdown-preview .md-toc{padding:0}.markdown-preview .md-toc .md-toc-link-wrapper .md-toc-link{display:inline;padding:.25rem 0}.markdown-preview .md-toc .md-toc-link-wrapper .md-toc-link div,.markdown-preview .md-toc .md-toc-link-wrapper .md-toc-link p{display:inline}.markdown-preview .md-toc .md-toc-link-wrapper.highlighted .md-toc-link{font-weight:800}.scrollbar-style::-webkit-scrollbar{width:8px}.scrollbar-style::-webkit-scrollbar-track{border-radius:10px;background-color:transparent}.scrollbar-style::-webkit-scrollbar-thumb{border-radius:5px;background-color:rgba(150,150,150,.66);border:4px solid rgba(150,150,150,.66);background-clip:content-box}html body[for=html-export]:not([data-presentation-mode]){position:relative;width:100%;height:100%;top:0;left:0;margin:0;padding:0;overflow:auto}html body[for=html-export]:not([data-presentation-mode]) .markdown-preview{position:relative;top:0;min-height:100vh}@media screen and (min-width:914px){html body[for=html-export]:not([data-presentation-mode]) .markdown-preview{padding:2em calc(50% - 457px + 2em)}}@media screen and (max-width:914px){html body[for=html-export]:not([data-presentation-mode]) .markdown-preview{padding:2em}}@media screen and (max-width:450px){html body[for=html-export]:not([data-presentation-mode]) .markdown-preview{font-size:14px!important;padding:1em}}@media print{html body[for=html-export]:not([data-presentation-mode]) #sidebar-toc-btn{display:none}}html body[for=html-export]:not([data-presentation-mode]) #sidebar-toc-btn{position:fixed;bottom:8px;left:8px;font-size:28px;cursor:pointer;color:inherit;z-index:99;width:32px;text-align:center;opacity:.4}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] #sidebar-toc-btn{opacity:1}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc{position:fixed;top:0;left:0;width:300px;height:100%;padding:32px 0 48px 0;font-size:14px;box-shadow:0 0 4px rgba(150,150,150,.33);box-sizing:border-box;overflow:auto;background-color:inherit}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc::-webkit-scrollbar{width:8px}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc::-webkit-scrollbar-track{border-radius:10px;background-color:transparent}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc::-webkit-scrollbar-thumb{border-radius:5px;background-color:rgba(150,150,150,.66);border:4px solid rgba(150,150,150,.66);background-clip:content-box}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc a{text-decoration:none}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc{padding:0 16px}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper .md-toc-link{display:inline;padding:.25rem 0}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper .md-toc-link div,html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper .md-toc-link p{display:inline}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper.highlighted .md-toc-link{font-weight:800}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .markdown-preview{left:300px;width:calc(100% - 300px);padding:2em calc(50% - 457px - 300px / 2);margin:0;box-sizing:border-box}@media screen and (max-width:1274px){html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .markdown-preview{padding:2em}}@media screen and (max-width:450px){html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .markdown-preview{width:100%}}html body[for=html-export]:not([data-presentation-mode]):not([html-show-sidebar-toc]) .markdown-preview{left:50%;transform:translateX(-50%)}html body[for=html-export]:not([data-presentation-mode]):not([html-show-sidebar-toc]) .md-sidebar-toc{display:none}
+/* Please visit the URL below for more information: */
+/*   https://shd101wyy.github.io/markdown-preview-enhanced/#/customize-css */
+
+      </style>
+      <!-- The content below will be included at the end of the <head> element. --><script type="text/javascript">
+  document.addEventListener("DOMContentLoaded", function () {
+    // your code here
+  });
+</script></head><body for="html-export">
+    
+    
+      <div class="crossnote markdown-preview  ">
+      
+<h1 id="vetflow-panel-rag--agenda-veterinaria">Vetflow: panel RAG + agenda veterinaria </h1>
+<p>Panel Flask con:</p>
+<ul>
+<li>Gestor de archivos: sube a Azure Blob (prefijo <code>file/...</code>), guarda metadatos en PostgreSQL, genera SAS y envía a n8n.</li>
+<li>Explorador de carpetas (reflejo de Blob): navegación por subcarpetas y drag &amp; drop.</li>
+<li>Agenda: CRUD de citas con vista mensual y APIs para bots/servicios.</li>
+<li>Clientes: gestiona contactos (cedula/pasaporte), notas y citas asociadas (opcional).</li>
+</ul>
+<h2 id="archivos-clave">Archivos clave </h2>
+<ul>
+<li><code>app.py</code>: arranque de Flask (usa <code>vetflow.create_app()</code>).</li>
+<li><code>vetflow/</code>: paquete con config, storage, db, servicios y blueprints (archivos, calendario, salud, UI).</li>
+<li><code>templates/index.html</code>: UI Archivos/Calendario, explorador de carpetas, drag &amp; drop.</li>
+<li><code>templates/clientes.html</code>: UI para <strong>Gestionar clientes</strong> (contactos, notas y citas).</li>
+<li><code>static/js/clientes.js</code>: frontend para crear/buscar/editar clientes.</li>
+<li><code>vetflow/routes/clientes.py</code>: endpoints JSON multi-tenant de clientes.</li>
+<li><code>vetflow/services/clientes.py</code>: lógica DB (clientes, notas, duplicados).</li>
+<li><code>schema.sql</code>: schema core + schema por workspace (<code>files</code>, <code>appointments</code>, <code>clients</code>, <code>client_notes</code>).</li>
+<li><code>.env.example</code>: variables requeridas.</li>
+<li><code>requirements.txt</code>: dependencias.</li>
+</ul>
+<h2 id="variables-de-entorno">Variables de entorno </h2>
+<p>Copia <code>.env.example</code> a <code>.env</code> y ajusta:</p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>AZURE_BLOB_CONN_STR=DefaultEndpointsProtocol=...;AccountName=...;AccountKey=...;EndpointSuffix=core.windows.net
+AZURE_BLOB_CONTAINER=uploads
+POSTGRES_DSN=postgresql://admin:admin123@localhost:5432/rag_panel
+DB_SCHEMA=vetbot
+CORE_SCHEMA=vetflow_core
+WORKSPACE_SCHEMA_PREFIX=ws
+DEFAULT_OWNER_EMAIL=demo@vetflow.local
+DEFAULT_OWNER_NAME=Demo Vetflow
+CLERK_PUBLISHABLE_KEY=pk_test_...
+CLERK_SECRET_KEY=sk_test_...
+CLERK_AUTH_REQUIRED=1
+# (Opcional) API key para n8n/bots sin Clerk
+VETFLOW_API_KEY=
+N8N_WEBHOOK_URL=https://tu-n8n/webhook/rag-files
+N8N_DELETE_WEBHOOK_URL=https://tu-n8n/webhook/rag-files-deleted
+N8N_NEW_WORKSPACE_WEBHOOK_URL=https://tu-n8n/webhook/newWorkpace
+EVOLUTION_API_BASE_URL=http://localhost:8080
+EVOLUTION_API_KEY=tu-api-key
+EVOLUTION_API_INTEGRATION=WHATSAPP-BAILEYS
+EVOLUTION_RABBITMQ_ENABLED=1
+EVOLUTION_RABBITMQ_EVENTS=CHATS_SET,CHATS_UPDATE,CHATS_UPSERT,CONNECTION_UPDATE,MESSAGES_SET,MESSAGES_UPDATE,MESSAGES_UPSERT,PRESENCE_UPDATE,REMOVE_INSTANCE
+API_HOST=0.0.0.0
+API_PORT=5000
+FLASK_SECRET_KEY=cambia-esta-clave
+LOG_LEVEL=INFO
+APP_TIMEZONE=UTC
+</code></pre><h2 id="instalar-y-correr">Instalar y correr </h2>
+<pre data-role="codeBlock" data-info="bash" class="language-bash bash"><code>python <span class="token parameter variable">-m</span> venv .venv
+.<span class="token punctuation">\</span>.venv<span class="token punctuation">\</span>Scripts<span class="token punctuation">\</span>activate        <span class="token comment"># en Windows (o source .venv/bin/activate en Linux/Mac)</span>
+pip <span class="token function">install</span> <span class="token parameter variable">-r</span> requirements.txt
+psql <span class="token string">"POSTGRES_DSN"</span> <span class="token parameter variable">-f</span> schema.sql   <span class="token comment"># crea schema vetbot y tablas</span>
+python app.py
+</code></pre><p>Abre <code>http://localhost:5000</code>.</p>
+<h2 id="flujo-de-uso-ui">Flujo de uso (UI) </h2>
+<ul>
+<li>Archivos: explora carpetas como en Blob; navega con las filas de carpeta o <code>[ .. ]</code>. El drag &amp; drop sube al folder actual. Miniaturas usan SAS temporal. “Enviar a bot” cambia de color según el <code>status</code>. El botón “Solicitar borrado” marca el archivo como <code>deleting</code> (badge naranja) y dispara el webhook de borrado.</li>
+<li>Calendario: crea/edita/elimina citas; vista mensual con eventos por día y modal de detalle.</li>
+<li>Gestionar clientes: crea/busca/edita clientes (identificación obligatoria), agrega notas y agenda citas; desde Calendario puedes asociar una cita a un cliente (opcional).</li>
+</ul>
+<h2 id="api-json">API JSON </h2>
+<p>Fechas en ISO8601, ejemplo <code>2025-01-15T10:00:00Z</code>.</p>
+<h3 id="autenticación-apis">Autenticación (APIs) </h3>
+<ul>
+<li><strong>Clerk (usuarios)</strong>: el navegador obtiene un JWT y llama <code>POST /session/clerk</code> con <code>Authorization: Bearer &lt;JWT&gt;</code>. El backend valida (JWKS) y crea una sesión (cookie). Las llamadas al mismo origin (panel web) usan esa cookie automáticamente.</li>
+<li><strong>API Key (n8n/bots)</strong>: define <code>VETFLOW_API_KEY</code> y envía <code>X-API-Key: &lt;tu-key&gt;</code> en cada request al panel. Recomendado para integraciones server-to-server (no requiere cookies).</li>
+<li><strong>Desactivado (solo dev)</strong>: con <code>CLERK_AUTH_REQUIRED=0</code> las APIs quedan públicas.</li>
+</ul>
+<h2 id="workspaces-y-multi-tenancy">Workspaces y multi-tenancy </h2>
+<ul>
+<li>Tras actualizar el repositorio vuelve a ejecutar <code>psql "POSTGRES_DSN" -f schema.sql</code> para asegurarte de que el tipo <code>vetflow_core.appointment_status</code>, la función <code>ensure_workspace_schema</code> y las tablas globales existen. El script es idempotente.</li>
+<li>El schema <code>schema.sql</code> crea <code>vetflow_core</code>, las tablas (<code>app_users</code>, <code>workspaces</code>, <code>workspace_members</code>, <code>workspace_invites</code>) y la función <code>vetflow_core.ensure_workspace_schema(schema_name text)</code> que provisiona las tablas <code>files</code>/<code>appointments</code> dentro de un schema dedicado por workspace.</li>
+<li>Además, <code>ensure_workspace_schema</code> provisiona <code>clients</code> y <code>client_notes</code> y añade las columnas <code>appointments.timezone</code> y <code>appointments.client_id</code> (nullable) dentro de cada workspace.</li>
+<li>Cada workspace se asocia a un correo (idealmente Gmail) y genera un schema único <code>ws_&lt;slug&gt;_&lt;hash&gt;</code>. El backend invoca <code>ensure_workspace_schema</code> automáticamente al crear un workspace para garantizar que existan tablas y tipos.</li>
+<li>Con Clerk activo (<code>CLERK_PUBLISHABLE_KEY</code>, <code>CLERK_AUTH_REQUIRED=1</code>), el panel exige iniciar sesión y sincroniza la sesión en <code>POST /session/clerk</code> enviando <code>Authorization: Bearer &lt;JWT&gt;</code>. El backend valida el JWT (JWKS), registra el usuario (asociando <code>clerk_id</code>) y crea un workspace por defecto si no existe.</li>
+<li>Desde el panel (ruta <code>/</code>) puedes seleccionar workspaces existentes, ver sus métricas (archivos/citas) y abrir un modal para crear más. La sesión recuerda el último workspace elegido y todas las operaciones (archivos, calendario, webhooks) se ejecutan dentro de ese schema.</li>
+<li>Las APIs multi-tenant se consumen con prefijo de workspace: <code>/w/&lt;schema_name&gt;/api/...</code> (calendario, archivos, SAS), evitando colisiones de sesión entre workspaces. <code>schema_name</code> tiene forma <code>ws_&lt;slug&gt;_&lt;hash&gt;</code>.</li>
+</ul>
+<h3 id="diagrama-de-arquitectura-creación-de-workspace">Diagrama de arquitectura (creación de workspace) </h3>
+<div class="mermaid">flowchart LR
+    Clerk[Clerk navegador] --&gt;|JWT Bearer| SessionEndpoint[POST /session/clerk]
+    SessionEndpoint --&gt; FlaskVetflow
+    subgraph Backend
+        FlaskVetflow[Flask Vetflow&lt;br/&gt;/ui + /api]
+        Service[Servicio Workspaces]
+    end
+    FlaskVetflow --&gt;|list/create| Service
+    Service --&gt;|DDL| CoreDB[(PostgreSQL&lt;br/&gt;vetflow_core)]
+    Service --&gt;|ensure_workspace_schema| WorkspaceDB[(PostgreSQL&lt;br/&gt;schema ws_x)]
+    FlaskVetflow --&gt;|CRUD archivos/citas| WorkspaceDB
+    FlaskVetflow --&gt;|blob SAS / uploads| Azure[(Azure Blob Storage)]
+    FlaskVetflow --&gt;|QR WhatsApp / instancia| Evolution[(Evolution API)]
+
+    classDef infra fill:#f3f4ff,stroke:#7c3aed,color:#1c1233;
+    classDef service fill:#fff7ed,stroke:#fb923c,color:#7c2d12;
+    class Clerk infra
+    class FlaskVetflow,Service service
+    class CoreDB,WorkspaceDB infra
+    class Azure,Evolution infra
+</div><h3 id="modelo-de-datos-erd">Modelo de datos (ERD) </h3>
+<p>Cada workspace tiene su propio schema en PostgreSQL (ej. <code>ws_&lt;slug&gt;_&lt;hash&gt;</code>). Dentro de ese schema existen las tablas de agenda, archivos y ahora también clientes:</p>
+<div class="mermaid">erDiagram
+    CLIENTS {
+        int id PK
+        string full_name
+        string id_type
+        string id_number
+        string phone
+        string email
+        string address
+        string notes
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    CLIENT_NOTES {
+        int id PK
+        int client_id FK
+        string body
+        timestamptz created_at
+    }
+
+    APPOINTMENTS {
+        int id PK
+        string title
+        string description
+        timestamptz start_time
+        timestamptz end_time
+        string timezone
+        string status
+        int client_id FK
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    CLIENTS ||--o{ CLIENT_NOTES : "tiene"
+    CLIENTS o|--o{ APPOINTMENTS : "opcional"
+</div><h3 id="calendario-citas">Calendario (citas) </h3>
+<ul>
+<li>Listar: <code>GET /w/&lt;schema_name&gt;/api/calendar</code></li>
+<li>Obtener una: <code>GET /w/&lt;schema_name&gt;/api/calendar/&lt;id&gt;</code></li>
+<li>Crear: <code>POST /w/&lt;schema_name&gt;/api/calendar</code>
+<ul>
+<li>Opcional: <code>client_id</code> para asociar la cita a un cliente (si se omite o es <code>null</code>, queda sin cliente).<br>
+En PowerShell:</li>
+</ul>
+<pre data-role="codeBlock" data-info="powershell" class="language-powershell powershell"><code><span class="token variable">$payload</span> = @<span class="token punctuation">{</span>
+  title = <span class="token string">"Vacuna gato"</span>
+  description = <span class="token string">"Refuerzo anual"</span>
+  start_time = <span class="token string">"2025-01-15T10:00:00Z"</span>
+  end_time = <span class="token string">"2025-01-15T10:30:00Z"</span>
+  client_id = 1  <span class="token comment"># opcional</span>
+<span class="token punctuation">}</span> <span class="token punctuation">|</span> <span class="token function">ConvertTo-Json</span> <span class="token operator">-</span>Compress
+
+<span class="token comment"># Para n8n/bots: usa API Key (X-API-Key). En el navegador (panel) no hace falta porque hay cookie de sesión.</span>
+<span class="token variable">$headers</span> = @<span class="token punctuation">{</span>
+  <span class="token string">"X-API-Key"</span> = <span class="token string">"TU_API_KEY"</span>
+<span class="token punctuation">}</span>
+
+<span class="token function">Invoke-RestMethod</span> <span class="token operator">-</span>Method Post `
+  <span class="token operator">-</span>Uri <span class="token string">"http://localhost:5000/w/demo-vetflow/api/calendar"</span> `
+  <span class="token operator">-</span>Headers <span class="token variable">$headers</span> `
+  <span class="token operator">-</span>Body <span class="token variable">$payload</span> `
+  <span class="token operator">-</span>ContentType <span class="token string">"application/json"</span>
+</code></pre></li>
+<li>Actualizar parcial: <code>PUT /w/&lt;schema_name&gt;/api/calendar/&lt;id&gt;</code><br>
+En PowerShell (comillas escapadas):<pre data-role="codeBlock" data-info="powershell" class="language-powershell powershell"><code><span class="token variable">$payload</span> = @<span class="token punctuation">{</span>
+  title = <span class="token string">"Vacuna gato (ajustada)"</span>
+  end_time = <span class="token string">"2025-01-15T10:45:00Z"</span>
+  client_id = <span class="token variable">$null</span>  <span class="token comment"># opcional: quitar asociacion</span>
+<span class="token punctuation">}</span> <span class="token punctuation">|</span> <span class="token function">ConvertTo-Json</span> <span class="token operator">-</span>Compress
+
+<span class="token variable">$headers</span> = @<span class="token punctuation">{</span>
+  <span class="token string">"X-API-Key"</span> = <span class="token string">"TU_API_KEY"</span>
+<span class="token punctuation">}</span>
+
+<span class="token function">Invoke-RestMethod</span> <span class="token operator">-</span>Method Put `
+  <span class="token operator">-</span>Uri <span class="token string">"http://localhost:5000/w/demo-vetflow/api/calendar/1"</span> `
+  <span class="token operator">-</span>Headers <span class="token variable">$headers</span> `
+  <span class="token operator">-</span>Body <span class="token variable">$payload</span> `
+  <span class="token operator">-</span>ContentType <span class="token string">"application/json"</span>
+</code></pre></li>
+<li>Eliminar: <code>DELETE /w/&lt;schema_name&gt;/api/calendar/&lt;id&gt;</code></li>
+</ul>
+<h3 id="clientes-crm">Clientes (CRM) </h3>
+<ul>
+<li>Los clientes viven en la tabla <code>clients</code> dentro del schema del workspace.</li>
+<li>Identificación obligatoria:
+<ul>
+<li><code>id_type</code>: <code>cedula</code> o <code>pasaporte</code></li>
+<li><code>id_number</code>: número/documento</li>
+</ul>
+</li>
+<li>Duplicados: si intentas crear/editar un cliente con la misma identificación, la API responde <code>409</code> con:
+<ul>
+<li><code>{ "error": "cliente_ya_existe", "existing_client_id": &lt;id&gt; }</code></li>
+</ul>
+</li>
+</ul>
+<p><strong>Endpoints (multi-tenant)</strong></p>
+<ul>
+<li>Listar/buscar: <code>GET /w/&lt;schema_name&gt;/api/clientes?q=&lt;texto&gt;&amp;limit=200</code></li>
+<li>Crear: <code>POST /w/&lt;schema_name&gt;/api/clientes</code></li>
+<li>Obtener: <code>GET /w/&lt;schema_name&gt;/api/clientes/&lt;client_id&gt;</code></li>
+<li>Actualizar: <code>PUT /w/&lt;schema_name&gt;/api/clientes/&lt;client_id&gt;</code></li>
+<li>Agregar nota: <code>POST /w/&lt;schema_name&gt;/api/clientes/&lt;client_id&gt;/notas</code></li>
+<li>Crear cita asociada: <code>POST /w/&lt;schema_name&gt;/api/clientes/&lt;client_id&gt;/citas</code> (crea en <code>appointments</code> con <code>client_id</code>)</li>
+</ul>
+<p><strong>UI</strong></p>
+<ul>
+<li>Nueva pestaña <strong>Gestionar clientes</strong>: CRUD, notas y citas por cliente.</li>
+<li>En el modal de crear/editar cita del <strong>Calendario</strong> existe el selector <strong>Cliente (opcional)</strong> que guarda <code>appointments.client_id</code>.</li>
+</ul>
+<h3 id="ui-calendario-fullcalendar">UI Calendario (FullCalendar) </h3>
+<ul>
+<li>La pestaña <strong>Calendario</strong> usa FullCalendar (vista principal) conectado a los endpoints multi-tenant <code>/w/&lt;schema_name&gt;/api/calendar</code>.</li>
+<li>Vista por defecto: semanal (<code>timeGridWeek</code>), con scroll vertical habilitado y centrado alrededor de la hora actual.</li>
+<li>Crear/editar: FullCalendar reutiliza los mismos modales/formularios ("cartillas") del panel (<code>Nueva cita</code> y editar desde la lista o el evento), incluyendo selector de <strong>Cliente (opcional)</strong>.</li>
+<li>Acciones soportadas:
+<ul>
+<li>Seleccionar rango en el calendario: abre el modal de creación.</li>
+<li>Click en evento: abre el modal de edición existente.</li>
+<li>Drag &amp; drop / resize: actualiza la cita (respeta estados bloqueados como <code>cancelada</code>, <code>completada</code>, <code>no_show</code>).</li>
+</ul>
+</li>
+<li>Archivos clave:
+<ul>
+<li>UI: <code>templates/partials/calendar_tab.html</code></li>
+<li>FullCalendar glue: <code>static/js/fullcalendar.js</code></li>
+<li>Modales + lógica de citas: <code>static/js/calendar.js</code></li>
+</ul>
+</li>
+</ul>
+<h3 id="zona-horaria-horas-consistentes-uidb">Zona horaria (horas consistentes UI/DB) </h3>
+<ul>
+<li><code>appointments.start_time/end_time</code> son <code>timestamptz</code>; Postgres guarda el instante y lo muestra según el timezone de la sesión.</li>
+<li>Configura <code>APP_TIMEZONE</code> (ej. <code>America/Bogota</code>) para que la API devuelva/consuma horas consistentes en ese timezone.</li>
+<li>El frontend envía fechas con offset local para evitar desfaces al guardar/editar.</li>
+<li>Nota: al editar una cita y cambiar solo el <code>status</code>, el modal envía solo los campos modificados para evitar que <code>start_time/end_time</code> se recalculen y “salten” de hora.</li>
+<li>El backend acepta el header <code>X-Timezone</code> (p. ej. <code>America/Bogota</code>) para fijar el <code>TimeZone</code> de la sesión Postgres por request, evitando saltos al refrescar tras cambios (status/drag/resize).</li>
+<li>Nota UI: los inputs <code>datetime-local</code> del modal de creación/edición usan formato local <code>YYYY-MM-DDTHH:MM</code>; el panel convierte internamente a ISO con offset para persistir correctamente.</li>
+</ul>
+<h3 id="archivos">Archivos </h3>
+<ul>
+<li>Eliminar: <code>DELETE /w/&lt;schema_name&gt;/api/files/&lt;id&gt;</code> (o <code>/api/files/&lt;id&gt;</code> para el schema default) marca <code>status=deleting</code> y notifica <code>N8N_DELETE_WEBHOOK_URL</code>.</li>
+<li>Actualizar metadatos/status (para n8n o bots): <code>PUT /w/&lt;schema_name&gt;/api/files/&lt;id&gt;</code> (o <code>/api/files/&lt;id&gt;</code> para el schema default)<br>
+En PowerShell:<pre data-role="codeBlock" data-info="powershell" class="language-powershell powershell"><code><span class="token variable">$payload</span> = @<span class="token punctuation">{</span>
+  status = <span class="token string">"processed"</span>
+  tags = @<span class="token punctuation">(</span><span class="token string">"felino"</span><span class="token punctuation">,</span><span class="token string">"rx"</span><span class="token punctuation">)</span>
+  notes = <span class="token string">"procesado por bot"</span>
+  processed_at = <span class="token string">"2025-01-16T12:00:00Z"</span>
+<span class="token punctuation">}</span> <span class="token punctuation">|</span> <span class="token function">ConvertTo-Json</span> <span class="token operator">-</span>Compress
+
+<span class="token variable">$headers</span> = @<span class="token punctuation">{</span>
+  <span class="token string">"X-API-Key"</span> = <span class="token string">"TU_API_KEY"</span>
+<span class="token punctuation">}</span>
+
+<span class="token function">Invoke-RestMethod</span> <span class="token operator">-</span>Method Put `
+  <span class="token operator">-</span>Uri <span class="token string">"http://localhost:5000/w/demo-vetflow/api/files/1"</span> `
+  <span class="token operator">-</span>Headers <span class="token variable">$headers</span> `
+  <span class="token operator">-</span>Body <span class="token variable">$payload</span> `
+  <span class="token operator">-</span>ContentType <span class="token string">"application/json"</span>
+</code></pre>Respuesta: JSON con el registro actualizado.</li>
+</ul>
+<h2 id="integración-ragn8n">Integración RAG/n8n </h2>
+<ul>
+<li>Configura <code>N8N_WEBHOOK_URL</code> (ingesta/procesamiento) y <code>N8N_DELETE_WEBHOOK_URL</code> (borrado).</li>
+<li>(Opcional) <code>N8N_NEW_WORKSPACE_WEBHOOK_URL</code>: se llama al crear un workspace para que n8n haga aprovisionamiento externo.
+<ul>
+<li>Si usas n8n en <strong>modo test</strong> (<code>/webhook-test/...</code>), el webhook solo responde cuando el workflow está en <strong>Listening for test event</strong> y la URL suele incluir un identificador; si no, verás <code>404 ... webhook is not registered</code>.</li>
+<li>Para producción usa <code>/webhook/...</code> con el workflow <strong>activo</strong> (Activated) para que siempre reciba eventos.</li>
+</ul>
+</li>
+<li><strong>Autenticación (n8n -&gt; panel)</strong>
+<ul>
+<li>Define <code>VETFLOW_API_KEY</code> en el panel y agrega en tu nodo <strong>HTTP Request</strong> el header <code>X-API-Key: &lt;VETFLOW_API_KEY&gt;</code>.</li>
+<li>Usa el campo <code>schema</code> que llega en el webhook para armar URLs multi-tenant:
+<ul>
+<li><code>PUT http://&lt;panel&gt;/w/&lt;schema_name&gt;/api/files/&lt;id&gt;</code></li>
+<li><code>GET http://&lt;panel&gt;/w/&lt;schema_name&gt;/file/&lt;id&gt;/sas</code></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><strong>Cuándo se llama a n8n</strong>
+<ul>
+<li><strong>Al subir un archivo</strong> (<code>POST /upload</code>): se crea el registro con <code>status=uploaded</code> y luego se intenta notificar a n8n con <code>N8N_WEBHOOK_URL</code> (best-effort).</li>
+<li><strong>Al pulsar "Enviar al bot"</strong> (UI): llama explícitamente a <code>N8N_WEBHOOK_URL</code>; si n8n responde <code>2xx</code> el panel actualiza el registro a <code>status=processing</code>.</li>
+<li><strong>Al solicitar borrado</strong> (<code>POST /files/&lt;id&gt;/delete</code> o <code>DELETE /w/&lt;schema_name&gt;/api/files/&lt;id&gt;</code>): primero marca el registro como <code>status=deleting</code> y luego intenta notificar a n8n con <code>N8N_DELETE_WEBHOOK_URL</code>.</li>
+</ul>
+</li>
+<li><strong>Qué se envía (payload JSON)</strong>
+<ul>
+<li>Ingesta/proceso: <code>file_id</code>, <code>filename</code>, <code>blob_path</code>, <code>blob_url</code>, <code>folder</code>, <code>tags</code>, <code>notes</code>, <code>status</code>, <code>schema</code>.</li>
+<li>Borrado: <code>file_id</code>, <code>filename</code>, <code>blob_path</code>, <code>blob_url</code>, <code>container</code>, <code>schema</code>.</li>
+<li><code>schema</code> es el schema del workspace actual (multi-tenancy); n8n debe devolverlo/usar ese contexto si interactúa con la API del panel.</li>
+</ul>
+</li>
+<li><strong>Qué pasa si el webhook falla</strong>
+<ul>
+<li>Subida (<code>notify_ingest_webhook</code>): si el <code>POST</code> a n8n falla (timeout/connection/error), <strong>no rompe la subida</strong>; se loguea un warning y el archivo queda en <code>uploaded</code>.</li>
+<li>Enviar al bot (acción explícita): si n8n responde no-<code>2xx</code> o hay excepción, la UI muestra error y <strong>no</strong> cambia el <code>status</code> a <code>processing</code>.</li>
+<li>Borrado: el panel <strong>siempre</strong> marca <code>status=deleting</code> y luego intenta el webhook; si falla, el registro queda como <code>deleting</code> y puedes reintentar desde la UI. La API responde <code>202</code> indicando "pendiente de webhook n8n".</li>
+</ul>
+</li>
+<li><strong>Nota sobre <code>webhook-test</code></strong>
+<ul>
+<li>Si usas URLs tipo <code>/webhook-test/...</code> y n8n responde <code>404</code>, el backend intenta automáticamente la variante de producción <code>/webhook/...</code> (y añade un mensaje de ayuda en la respuesta/UI).</li>
+</ul>
+</li>
+<li><strong>Callback desde n8n al panel</strong>
+<ul>
+<li>Tras procesar o borrar, n8n debe llamar <code>PUT /w/&lt;schema_name&gt;/api/files/&lt;id&gt;</code> (usa el <code>schema</code> del webhook) para actualizar <code>status</code>, <code>tags</code>, <code>notes</code>, <code>processed_at</code> (por ejemplo <code>processed</code>, <code>done</code>, <code>deleted</code>, <code>expired</code>). Incluye <code>X-API-Key</code>.</li>
+<li>Para descargar el blob, n8n puede generar una SAS con <code>GET /w/&lt;schema_name&gt;/file/&lt;id&gt;/sas</code> (incluye <code>X-API-Key</code>) y luego descargar la <code>url</code> resultante.</li>
+</ul>
+</li>
+</ul>
+<h2 id="integración-whatsapp-evolution-api">Integración WhatsApp (Evolution API) </h2>
+<ul>
+<li>Variables:
+<ul>
+<li><code>EVOLUTION_API_BASE_URL</code>: URL base de Evolution (sin trailing <code>/</code>), ejemplo <code>http://localhost:8080</code></li>
+<li><code>EVOLUTION_API_KEY</code>: API key (header <code>apikey</code>)</li>
+<li><code>EVOLUTION_API_INTEGRATION</code> (opcional): por defecto <code>WHATSAPP-BAILEYS</code></li>
+<li><code>EVOLUTION_RABBITMQ_ENABLED</code> (opcional): por defecto <code>1</code> (habilita RabbitMQ en la creación de instancias)</li>
+<li><code>EVOLUTION_RABBITMQ_EVENTS</code> (opcional): eventos RabbitMQ (coma-separados). Default:
+<ul>
+<li><code>CHATS_SET, CHATS_UPDATE, CHATS_UPSERT, CONNECTION_UPDATE, MESSAGES_SET, MESSAGES_UPDATE, MESSAGES_UPSERT, PRESENCE_UPDATE, REMOVE_INSTANCE</code></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>RabbitMQ:
+<ul>
+<li>La configuración de RabbitMQ se envía dentro de <code>POST /instance/create</code> (Evolution) al generar QR.</li>
+<li>La UI no configura eventos RabbitMQ; se controla con variables de entorno.</li>
+</ul>
+</li>
+<li>Webhooks WhatsApp:
+<ul>
+<li>Se removió la configuración automática de webhook (n8n) para WhatsApp; los eventos se consumen vía RabbitMQ.</li>
+</ul>
+</li>
+<li>UI (pestaña <strong>Integración WhatsApp</strong>):
+<ul>
+<li>La instancia de Evolution se nombra con el <code>schema_name</code> del workspace (ej. <code>ws_&lt;slug&gt;_&lt;hash&gt;</code>), para que sea única y coincida con el nombre del schema en PostgreSQL.</li>
+<li>La UI <strong>solo</strong> consulta estado con <code>GET /status</code> (no hace <code>connect</code> automático). Se ejecuta 1 vez al abrir la pestaña y cuando pulsas <strong>Actualizar estado</strong>.</li>
+<li>Si el estado es <code>open</code> (o <code>connected=true</code>), se oculta el panel de QR y se muestra <strong>Conexión activa</strong> con detalles.</li>
+<li>Si no está conectado, se muestra el panel de QR (oculto por defecto) y el botón <strong>Generar QR</strong>.</li>
+<li>Al generar QR se muestra un spinner mientras llega la respuesta.</li>
+<li><strong>Cerrar sesión WhatsApp</strong> (modal): solo desconecta cuando el usuario confirma la acción (no se desconecta por recargar/salir del panel).</li>
+</ul>
+</li>
+<li>Endpoints:
+<ul>
+<li><code>GET /w/&lt;schema_name&gt;/api/whatsapp/status</code>: valida estado de la instancia (usa endpoints de estado, no llama a <code>connect</code> para evitar regenerar QR/alterar sesión). Responde <code>connected</code>, <code>state</code>, <code>details</code>.</li>
+<li><code>GET /w/&lt;schema_name&gt;/api/whatsapp/qr</code>: asegura instancia + pide QR. Antes de generar, la UI valida estado; si ya está conectado no genera un QR nuevo.</li>
+<li><code>POST /w/&lt;schema_name&gt;/api/whatsapp/logout</code>: cierra sesión/desconecta la instancia <strong>solo</strong> cuando el usuario pulsa el botón "Cerrar sesión WhatsApp".</li>
+</ul>
+</li>
+<li>Archivos clave:
+<ul>
+<li>Backend: <code>vetflow/services/evolution.py</code>, <code>vetflow/routes/whatsapp.py</code>, <code>vetflow/config.py</code></li>
+<li>UI/JS: <code>templates/partials/whatsapp_tab.html</code>, <code>static/js/whatsapp.js</code></li>
+</ul>
+</li>
+<li>Logs:
+<ul>
+<li><code>vetflow/services/evolution.py</code>: logs <code>INFO/WARNING</code> para <code>create_instance</code>, <code>connect_qr</code>, <code>get_instance_status</code> (instance, code, state, detalles resumidos).</li>
+<li><code>vetflow/routes/whatsapp.py</code>: logs <code>INFO/DEBUG</code> por request (slug, instance, IP/User-Agent) y resultado (connected/state) para depuración.</li>
+</ul>
+</li>
+</ul>
+<h3 id="flujo-de-integración">Flujo de integración </h3>
+<div class="mermaid">sequenceDiagram
+    participant User as Usuario
+    participant UI as Frontend (JS)
+    participant Backend as Flask
+    participant Evo as Evolution API
+    participant WA as WhatsApp (Móvil)
+
+    User-&gt;&gt;UI: Clic "Generar QR"
+    UI-&gt;&gt;Backend: GET /w/slug/api/whatsapp/qr
+    Backend-&gt;&gt;Evo: instance/connectionState (Check if connected)
+    alt Ya conectado
+        Evo--&gt;&gt;Backend: connected: true
+        Backend--&gt;&gt;UI: 409 Conflict (Ya conectado)
+        UI--&gt;&gt;User: Muestra "Conexión activa"
+    else No conectado
+        Backend-&gt;&gt;Evo: instance/create (Crea instancia)
+        Backend-&gt;&gt;Evo: instance/connect (Solicita QR)
+        Evo--&gt;&gt;Backend: QR Base64
+        Backend--&gt;&gt;UI: QR Image
+        UI--&gt;&gt;User: Muestra QR
+        User-&gt;&gt;WA: Escanea QR
+        
+        Note over UI: La UI no hace polling.\nSolo refresca el estado con GET\n(al abrir la pestaña o con “Actualizar estado”).
+    end
+</div><h2 id="notas">Notas </h2>
+<ul>
+<li>El contenedor de Blob se crea en caliente si no existe.</li>
+<li>Para SAS se requieren <code>AccountName</code> y <code>AccountKey</code> en la cadena de conexión.</li>
+<li>Servir siempre vía Flask; abrir el HTML directo mostrará llaves Jinja.</li>
+</ul>
+<h2 id="frontend-clerk-vite--clerkjs">Frontend Clerk (Vite + ClerkJS) </h2>
+<p>El subdirectorio <code>clerk-javascript/</code> contiene una app Vite (Vanilla JS) que monta el flujo de autenticación de Clerk. Puedes seguir usándola como demo independiente (mantiene el <code>&lt;iframe&gt;</code>), pero el panel Flask ya incorpora Clerk de forma nativa mediante <code>@clerk/clerk-js</code>. Para validar el JWT en el backend define <code>CLERK_PUBLISHABLE_KEY</code>, <code>CLERK_SECRET_KEY</code> y deja <code>CLERK_AUTH_REQUIRED=1</code> en tu <code>.env</code>.</p>
+<h3 id="producción-evitar-no-se-pudo-cargar-clerk-dominio-no-autorizado">Producción: evitar “No se pudo cargar Clerk… dominio no autorizado” </h3>
+<p>Ese mensaje aparece cuando el <strong>origin</strong> desde donde abres el panel (por ejemplo <code>https://panel.tudominio.com</code> o <code>http://IP:5000</code>) <strong>no está permitido</strong> por tu instancia de Clerk, o cuando usas una key que no corresponde al ambiente.</p>
+<p>Checklist:</p>
+<ol>
+<li>En Clerk Dashboard selecciona el ambiente <strong>Production</strong> y copia la <code>CLERK_PUBLISHABLE_KEY</code> <code>pk_live_...</code> (no uses <code>pk_test_...</code> en prod).</li>
+<li>En Clerk Dashboard ve a <strong>Configure → Domains</strong> (o “Domains &amp; URLs”) y agrega el dominio/origin exacto desde el que sirves el panel:
+<ul>
+<li>Si usas dominio: <code>https://panel.tudominio.com</code></li>
+<li>Si pruebas con IP/puerto: <code>http://&lt;tu-ip&gt;:5000</code> (mejor usar dominio + HTTPS en producción)</li>
+</ul>
+</li>
+<li>Asegura que el panel se sirva por el mismo origin que registraste (ideal: HTTPS detrás de Nginx/Traefik/Cloudflare).</li>
+<li>Si también usas el frontend Vite (<code>clerk-javascript/</code>), registra adicionalmente su origin (ej. <code>http://localhost:5173</code>) y revisa que <code>VITE_PANEL_URL</code> apunte al URL público correcto del panel.</li>
+</ol>
+<h3 id="producción-err_name_not_resolved-clerktu-dominio-no-resuelve">Producción: <code>ERR_NAME_NOT_RESOLVED</code> (clerk.<tu-dominio> no resuelve) </tu-dominio></h3>
+<p>Si en la consola ves errores como:</p>
+<ul>
+<li><code>GET https://clerk.&lt;tu-dominio&gt;/v1/environment ... net::ERR_NAME_NOT_RESOLVED</code></li>
+<li><code>GET https://clerk.&lt;tu-dominio&gt;/v1/client ... net::ERR_NAME_NOT_RESOLVED</code></li>
+</ul>
+<p>No es un error de tu app: significa que <strong>DNS no puede resolver</strong> <code>clerk.&lt;tu-dominio&gt;</code> (el subdominio no existe o no está apuntando).</p>
+<p>Cómo solucionarlo:</p>
+<ol>
+<li>En Clerk Dashboard (ambiente <strong>Production</strong>) ve a <strong>Domains</strong> y revisa tu <strong>Custom domain</strong>.</li>
+<li>Crea en tu proveedor DNS (Hostinger/Cloudflare/etc.) el/los registros que Clerk te indica (normalmente un <strong>CNAME</strong> para <code>clerk</code> apuntando al target de Clerk).</li>
+<li>Espera la propagación y valida con <code>nslookup clerk.&lt;tu-dominio&gt;</code> (o <code>dig</code>) hasta que resuelva.</li>
+<li>Alternativa: si no necesitas custom domain, usa el dominio por defecto que muestra Clerk en <strong>Frontend API URL</strong> (y mantén <code>CLERK_PUBLISHABLE_KEY=pk_live_...</code> en prod).</li>
+</ol>
+<h3 id="configuración-y-prueba">Configuración y prueba </h3>
+<pre data-role="codeBlock" data-info="bash" class="language-bash bash"><code><span class="token builtin class-name">cd</span> clerk-javascript
+<span class="token function">cat</span> <span class="token operator">&lt;&lt;</span><span class="token string">'EOF'<span class="token bash punctuation"> <span class="token operator">&gt;</span> .env</span>
+VITE_CLERK_PUBLISHABLE_KEY=pk_test_cXJrLmFjY291bnRzLmRldiQ
+VITE_PANEL_URL=http://localhost:5000
+EOF</span>
+<span class="token function">npm</span> <span class="token function">install</span>
+<span class="token function">npm</span> run dev
+</code></pre><ol>
+<li>Arranca también el backend Flask (<code>python app.py</code>) para que el iframe tenga contenido.</li>
+<li>Abre <code>http://localhost:5173</code>.</li>
+<li>Clerk renderiza el formulario de inicio de sesión. Tras autenticarse, aparece el encabezado con <code>&lt;UserButton /&gt;</code> y debajo el panel servido por Flask. Al cerrar sesión se vuelve al formulario.</li>
+</ol>
+<h3 id="archivos-clave-1">Archivos clave </h3>
+<ul>
+<li><code>clerk-javascript/src/main.js</code>: inicializa <code>Clerk</code>, escucha cambios de sesión y monta el iframe hacia <code>VITE_PANEL_URL</code> cuando <code>clerk.isSignedIn</code> es <code>true</code>.</li>
+<li><code>clerk-javascript/src/style.css</code>: estilos del shell de autenticación/iframe.</li>
+<li><code>clerk-javascript/index.html</code>: entry point que carga <code>src/main.js</code>.</li>
+</ul>
+<h3 id="otros-comandos">Otros comandos </h3>
+<ul>
+<li><code>npm run build</code>: genera <code>dist/</code> estático con los assets listos para despliegue.</li>
+<li><code>npm run preview</code>: sirve <code>dist/</code> localmente para validación final.</li>
+</ul>
+<blockquote>
+<p>Cambia la publishable key y la URL del panel según ambiente usando <code>.env</code>, <code>.env.local</code> o variables de sistema; reinicia <code>npm run dev</code> al actualizar valores.</p>
+</blockquote>
+<h2 id="actualizaciones-recientes-de-uiux-y-calendario-diciembre-2025">Actualizaciones recientes de UI/UX y Calendario (Diciembre 2025) </h2>
+<h3 id="calendario-y-agenda">Calendario y Agenda </h3>
+<ul>
+<li><strong>Indicador de hora actual (Línea Roja):</strong>
+<ul>
+<li>Implementación robusta con reinserción automática en el DOM.</li>
+<li>Estilo plano con punto rojo ("flat red dot") alineado al inicio de la columna, similar a Google Calendar.</li>
+<li>Posicionamiento preciso sobre el ancho total de la columna, ignorando gutters para mejor visibilidad (<code>z-index: 50</code>).</li>
+</ul>
+</li>
+<li><strong>Alineación y Layout:</strong>
+<ul>
+<li>Corrección de la cabecera del calendario: alineación horizontal (row) de número y mes ("9 DIC"), eliminando desbordamientos verticales.</li>
+<li>Ajuste óptico de etiquetas: reducción de gap y alineación de línea base entre número y mes.</li>
+<li>Solución a desalineación al recargar página: forzado de barra de desplazamiento vertical (<code>overflow-y: scroll</code>) para garantizar cálculos de ancho (clientWidth) consistentes.</li>
+<li>Prevención de desbordamiento horizontal en vista mensual mediante ajuste de <code>minmax(0, 1fr)</code> en CSS Grid.</li>
+</ul>
+</li>
+<li><strong>Interacciones en Tiempo Real:</strong>
+<ul>
+<li>Visualización dinámica de la hora de inicio y fin mientras se arrastra o redimensiona una cita (ej. "14:27-16:27").</li>
+</ul>
+</li>
+<li><strong>Limpieza visual:</strong>
+<ul>
+<li>Eliminación de títulos redundantes ("Calendario", "Diciembre de 2025" duplicado) en la barra de herramientas.</li>
+</ul>
+</li>
+</ul>
+<h3 id="uiux-general">UI/UX General </h3>
+<ul>
+<li><strong>Persistencia de estado:</strong> La pestaña activa (Archivos vs Calendario) se guarda en <code>localStorage</code> para mantenerse tras recargas.</li>
+<li><strong>Menú Lateral (Hamburger):</strong> Lógica de toggle corregida para móviles.</li>
+<li><strong>Estilos:</strong>
+<ul>
+<li>Aplicación de Glassmorphism mejorado en el logo y tarjetas.</li>
+<li>Ajustes de tipografía y espaciado para una apariencia más compacta y moderna.</li>
+<li>Responsividad mejorada: ocultación de columnas menos relevantes en tablas (mobile) y adaptación de anchos de columna en calendario según dispositivo.</li>
+</ul>
+</li>
+</ul>
+<h2 id="docker--despliegue">Docker &amp; Despliegue </h2>
+<h3 id="construcción-y-ejecución-local">Construcción y Ejecución Local </h3>
+<p>El proyecto incluye configuración completa para Docker (<code>Dockerfile</code> y <code>docker-compose.yml</code>).</p>
+<ol>
+<li>
+<p><strong>Requisitos previos</strong>:</p>
+<ul>
+<li>Tener Docker y Docker Compose instalados.</li>
+<li>Tener el archivo <code>.env</code> configurado en la raíz con las credenciales (Azure, Postgres, etc.).</li>
+</ul>
+</li>
+<li>
+<p><strong>Levantar servicios (App + DB)</strong>:</p>
+<pre data-role="codeBlock" data-info="bash" class="language-bash bash"><code><span class="token function">docker-compose</span> up <span class="token parameter variable">--build</span>
+</code></pre><ul>
+<li>Esto levantará la app en <code>http://localhost:5000</code>.</li>
+<li>Postgres estará disponible en el puerto <code>5433</code> (para no chocar con instalaciones locales).</li>
+<li>La base de datos se inicializa automáticamente con <code>schema.sql</code> en el primer arranque.</li>
+</ul>
+</li>
+</ol>
+<h3 id="construir-y-publicar-imagen-push">Construir y Publicar Imagen (Push) </h3>
+<p>Para llevar la imagen a un registro (ej. Docker Hub, Azure CR, AWS ECR):</p>
+<ol>
+<li>
+<p><strong>Construir la imagen</strong>:</p>
+<pre data-role="codeBlock" data-info="bash" class="language-bash bash"><code><span class="token comment"># Sintaxis: docker build -t &lt;usuario&gt;/&lt;nombre-imagen&gt;:&lt;tag&gt; .</span>
+<span class="token function">docker</span> build <span class="token parameter variable">-t</span> erifcamp/flow-panel:v1.3.0 <span class="token builtin class-name">.</span>
+</code></pre></li>
+<li>
+<p><strong>Login en el registro</strong>:</p>
+<pre data-role="codeBlock" data-info="bash" class="language-bash bash"><code><span class="token function">docker</span> login
+</code></pre></li>
+<li>
+<p><strong>Subir la imagen (Push)</strong>:</p>
+<pre data-role="codeBlock" data-info="bash" class="language-bash bash"><code><span class="token function">docker</span> push erifcamp/flow-panel:v1.3.0 
+</code></pre></li>
+</ol>
+<h3 id="variables-de-entorno-en-docker">Variables de Entorno en Docker </h3>
+<p>Al usar <code>docker-compose</code>, las variables se leen automáticamente del archivo <code>.env</code>.<br>
+Si despliegas solo la imagen (<code>docker run</code>), debes pasar las variables manualmente o usar un archivo env:</p>
+<pre data-role="codeBlock" data-info="bash" class="language-bash bash"><code><span class="token function">docker</span> run <span class="token parameter variable">-p</span> <span class="token number">5000</span>:5000 --env-file .env miusuario/vetflow-panel:latest
+</code></pre><h3 id="actualizaciones-diciembre-2025-semana-2---timezones-y-funcionalidad">Actualizaciones Diciembre 2025 (Semana 2) - Timezones y Funcionalidad </h3>
+<h4 id="1-gestión-de-zona-horaria-timezone">1. Gestión de Zona Horaria (Timezone) </h4>
+<ul>
+<li><strong>Problema Solucionado:</strong> Las citas se guardaban con la hora "ingenua" o UTC incorrecta, y al visualizarlas se aplicaba un doble desplazamiento horario o se mostraban incorrectamente (ej. citas de las 11:00 aparecían a las 06:00).</li>
+<li><strong>Implementación:</strong>
+<ul>
+<li><strong>Detección Automática:</strong> El frontend (<code>calendar.js</code>) detecta automáticamente la zona horaria del navegador (ej. <code>America/Bogota</code>) usando <code>Intl.DateTimeFormat().resolvedOptions().timeZone</code>.</li>
+<li><strong>Envío Explícito:</strong> Al crear o editar una cita, se envía tanto la hora local formateada correctamente (ISO 8601 con offset) como el nombre de la zona horaria.</li>
+<li><strong>Persistencia:</strong> Se añadió una columna <code>timezone</code> a la tabla <code>appointments</code>.</li>
+<li><strong>Visualización:</strong> El listado de citas ahora muestra el indicador de zona horaria si está disponible, confirmando al usuario en qué huso horario se registró el evento.</li>
+</ul>
+</li>
+</ul>
+<h4 id="2-mejora-en-eliminación-de-citas">2. Mejora en Eliminación de Citas </h4>
+<ul>
+<li><strong>UX Mejorado:</strong> Se eliminó el uso de formularios tradicionales (<code>&lt;form&gt;</code>) para el botón de borrar en las tarjetas individuales. Ahora usa llamadas <code>fetch</code> con método <code>DELETE</code>, permitiendo una experiencia más fluida sin recargas completas de página.</li>
+<li><strong>Soporte Multi-Web/Workspace:</strong> Se corrigió la lógica de rutas en el botón de eliminación para respetar el contexto del workspace actual (<code>/w/&lt;schema_name&gt;/...</code>), asegurando que la acción se ejecute en el entorno correcto.</li>
+<li><strong>Acceso Global:</strong> Se expuso la función <code>deleteEvent</code> globalmente para permitir su uso seguro desde manejadores <code>onclick</code> en el HTML dinámico.</li>
+</ul>
+<h4 id="3-estabilidad-visual">3. Estabilidad Visual </h4>
+<ul>
+<li><strong>Prevención de "Flicker":</strong> Se implementó una clase de utilidad (<code>opacity-0</code> + <code>transition</code>) para ocultar las horas en formato UTC crudo hasta que el JavaScript las hidrata exitosamente a la hora local del usuario, evitando destellos de información incorrecta.</li>
+</ul>
+
+      </div>
+      
+      
+    
+    
+    <script type="module">
+// TODO: If ZenUML gets integrated into mermaid in the future,
+//      we can remove the following lines.
+
+
+var MERMAID_CONFIG = ({"startOnLoad":false});
+if (typeof MERMAID_CONFIG !== 'undefined') {
+  MERMAID_CONFIG.startOnLoad = false
+  MERMAID_CONFIG.cloneCssStyles = false
+  MERMAID_CONFIG.theme = "default"
+}
+
+mermaid.initialize(MERMAID_CONFIG || {})
+if (typeof(window['Reveal']) !== 'undefined') {
+  function mermaidRevealHelper(event) {
+    var currentSlide = event.currentSlide
+    var diagrams = currentSlide.querySelectorAll('.mermaid')
+    for (var i = 0; i < diagrams.length; i++) {
+      var diagram = diagrams[i]
+      if (!diagram.hasAttribute('data-processed')) {
+        mermaid.init(null, diagram, ()=> {
+          Reveal.slide(event.indexh, event.indexv)
+        })
+      }
+    }
+  }
+  Reveal.addEventListener('slidetransitionend', mermaidRevealHelper)
+  Reveal.addEventListener('ready', mermaidRevealHelper)
+  await mermaid.run({
+    nodes: document.querySelectorAll('.mermaid')
+  })
+} else {
+  await mermaid.run({
+    nodes: document.querySelectorAll('.mermaid')
+  })
+}
+</script>
+    
+    
+    
+  
+    </body></html>

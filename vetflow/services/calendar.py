@@ -61,6 +61,16 @@ def list_appointments() -> List[Dict[str, Any]]:
     return [row_to_appointment_api(r) for r in rows]
 
 
+def list_upcoming_appointments() -> List[Dict[str, Any]]:
+    with get_db() as conn:
+        _ensure_timezone_column(conn)
+        _ensure_client_id_column(conn)
+        rows = conn.execute(
+            "SELECT * FROM appointments WHERE GREATEST(start_time, end_time) >= NOW() ORDER BY start_time ASC"
+        ).fetchall()
+    return [row_to_appointment_api(r) for r in rows]
+
+
 def create_appointment(
     title: str,
     description: str,
@@ -278,4 +288,3 @@ def api_delete(appointment_id: int):
         raise LookupError("not_found")
     logger.info("Cita eliminada id=%s", appointment_id)
     return {"deleted": appointment_id}
-
