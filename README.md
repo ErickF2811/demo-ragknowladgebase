@@ -470,7 +470,7 @@ Para llevar la imagen a un registro (ej. Docker Hub, Azure CR, AWS ECR):
 1. **Construir la imagen**:
    ```bash
    # Sintaxis: docker build -t <usuario>/<nombre-imagen>:<tag> .
-   docker build -t erifcamp/flow-panel:v1.3.0 .
+   docker build -t erifcamp/flow-panel:v1.3.1 .
    ```
 
 2. **Login en el registro**:
@@ -480,7 +480,7 @@ Para llevar la imagen a un registro (ej. Docker Hub, Azure CR, AWS ECR):
 
 3. **Subir la imagen (Push)**:
    ```bash
-   docker push erifcamp/flow-panel:v1.3.0 
+   docker push erifcamp/flow-panel:v1.3.1 
    ```
 
 ### Variables de Entorno en Docker

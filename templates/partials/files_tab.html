@@ -47,6 +47,39 @@
               </div>
             </div>
           </form>
+          <div class="text-note-card mt-4">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+              <div>
+                <h6 class="mb-1">Nota rapida en TXT</h6>
+                <p class="small text-muted mb-0">Escribe en el panel y sube como archivo.</p>
+              </div>
+              <span class="badge rounded-pill text-bg-light">TXT</span>
+            </div>
+            <form id="textUploadForm" class="text-note-form">
+              <div class="row g-2">
+                <div class="col-md-4">
+                  <input id="textNoteTitle" type="text" class="form-control"
+                    placeholder="Titulo (opcional)">
+                </div>
+                <div class="col-md-4">
+                  <input id="textNoteTags" type="text" class="form-control"
+                    placeholder="tags (ej. consulta, vacuna)">
+                </div>
+                <div class="col-md-4">
+                  <input id="textNoteNotes" type="text" class="form-control"
+                    placeholder="Notas internas">
+                </div>
+              </div>
+              <div class="mt-2">
+                <textarea id="textNoteContent" class="form-control" rows="4" required
+                  placeholder="Escribe tu nota aqui..."></textarea>
+              </div>
+              <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3">
+                <div id="textNoteStatus" class="small text-muted"></div>
+                <button id="textNoteSubmit" class="btn btn-primary" type="submit">Crear TXT</button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
 

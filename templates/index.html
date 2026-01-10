@@ -300,6 +300,7 @@
   .summary-list .appointment-card {
     margin-bottom: 0;
     border-radius: 14px;
+    cursor: pointer;
   }
 
   .summary-stack {
@@ -378,6 +379,122 @@
   @media (max-width: 992px) {
     .summary-grid {
       grid-template-columns: 1fr;
+    }
+
+    .page-shell {
+      align-items: stretch;
+    }
+
+    .page-shell > .flex-grow-1 {
+      width: 100%;
+    }
+  }
+
+  @media (max-width: 500px) {
+    #summary {
+      width: 100%;
+    }
+
+    #summary .summary-grid {
+      grid-template-columns: 1fr;
+      width: 100%;
+    }
+
+    #summary .summary-card,
+    #summary .summary-list {
+      width: 100%;
+      max-width: 100%;
+    }
+  }
+
+  @media (max-width: 500px) and (max-height: 400px) {
+    body[data-active-tab="summary"] .vetflow-nav {
+      justify-content: flex-start;
+      padding: 0.6rem 1rem;
+    }
+
+    body[data-active-tab="summary"] .vetflow-brand,
+    body[data-active-tab="summary"] .vetflow-session {
+      display: none;
+    }
+
+    body[data-active-tab="summary"] .brand-hero {
+      display: none;
+    }
+
+    #summary .summary-grid {
+      gap: 0.75rem;
+      width: 100%;
+      display: block;
+    }
+
+    body[data-active-tab="summary"] .summary-card-body {
+      padding: 0.85rem;
+    }
+
+    #summary .summary-card,
+    #summary .summary-list {
+      width: 100%;
+      max-width: 100%;
+    }
+
+    #summary .summary-card-header {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    #summary .summary-subtitle {
+      display: none;
+    }
+
+    #summary .summary-stack {
+      display: none;
+    }
+
+    body[data-active-tab="summary"] .summary-card-header .btn[data-tab-target="calendar"] {
+      display: none;
+    }
+
+    body[data-active-tab="summary"] .summary-list {
+      max-height: 240px;
+    }
+
+    body[data-active-tab="summary"] .flex-grow-1.px-4 {
+      padding-left: 0.75rem !important;
+      padding-right: 0.75rem !important;
+    }
+
+    .modal-dialog {
+      margin: 0.5rem;
+      max-width: calc(100% - 1rem);
+    }
+
+    .modal-content {
+      border-radius: 14px;
+    }
+
+    .modal-header,
+    .modal-footer {
+      padding: 0.6rem 0.75rem;
+    }
+
+    .modal-title {
+      font-size: 1rem;
+    }
+
+    .modal-body {
+      padding: 0.65rem 0.75rem;
+      max-height: calc(100vh - 170px);
+      overflow-y: auto;
+    }
+
+    .modal-footer {
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .modal-footer .btn {
+      flex: 1 1 45%;
     }
   }
 
@@ -1094,7 +1211,7 @@
 </script>
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
 <script src="{{ url_for('static', filename='js/calendar.js') }}?v=12"></script>
-<script src="{{ url_for('static', filename='js/fullcalendar.js') }}?v=10"></script>
+<script src="{{ url_for('static', filename='js/fullcalendar.js') }}?v=11"></script>
 <script src="{{ url_for('static', filename='js/whatsapp.js') }}?v=26"></script>
 <script src="{{ url_for('static', filename='js/clientes.js') }}?v=2"></script>
 <script>
@@ -1124,8 +1241,12 @@
         pane.classList.remove('show', 'active');
         if (pane.id === target) pane.classList.add('show', 'active');
       });
+      document.body?.setAttribute('data-active-tab', target);
       if (target === 'calendar' && window.__renderCalendar) {
         try { window.__renderCalendar(); } catch (e) { console.error(e); }
+      }
+      if (target === 'calendar') {
+        window.dispatchEvent(new Event('vetflow:calendarTabActivated'));
       }
       localStorage.setItem('vetflow_active_tab', target);
     };
@@ -1138,9 +1259,12 @@
       });
     });
 
-    const storedTab = localStorage.getItem('vetflow_active_tab');
-    const defaultTab = storedTab && document.getElementById(storedTab) ? storedTab : 'calendar';
-    setActiveTab(defaultTab);
+    const calendarTab = document.getElementById('calendar');
+    const summaryTab = document.getElementById('summary');
+    const defaultTab = calendarTab ? 'calendar' : (summaryTab ? 'summary' : 'calendar');
+    const savedTab = localStorage.getItem('vetflow_active_tab');
+    const savedTabExists = savedTab && document.getElementById(savedTab);
+    setActiveTab(savedTabExists ? savedTab : defaultTab);
 
     // arrancamos colapsado en desktop; en mobile se abre con el overlay
     toggleSide(false);
@@ -1158,8 +1282,43 @@
     const totalEl = panel.querySelector('[data-summary-total-count]');
     const upcomingEl = panel.querySelector('[data-summary-upcoming-kpi]');
     const nextEl = panel.querySelector('[data-summary-next]');
-    const refreshMs = 30000;
+    const refreshMs = 2000;
     let refreshTimer = null;
+    let hasLoaded = false;
+    let previousIds = new Set();
+    const soundUrl = "{{ url_for('static', filename='music/ta-da_yrvBrlS.mp3') }}";
+    const summarySound = new Audio(soundUrl);
+    summarySound.preload = 'auto';
+    summarySound.volume = 0.7;
+    let soundUnlocked = false;
+    let soundPending = false;
+
+    const playSound = () => {
+      if (!soundUnlocked) {
+        soundPending = true;
+        return;
+      }
+      try {
+        summarySound.currentTime = 0;
+        const playPromise = summarySound.play();
+        if (playPromise && typeof playPromise.catch === 'function') {
+          playPromise.catch(() => { });
+        }
+      } catch { }
+    };
+
+    const unlockSound = () => {
+      if (soundUnlocked) return;
+      soundUnlocked = true;
+      if (soundPending) {
+        soundPending = false;
+        playSound();
+      }
+    };
+
+    document.addEventListener('pointerdown', unlockSound, { once: true });
+    document.addEventListener('keydown', unlockSound, { once: true });
+    document.addEventListener('touchstart', unlockSound, { once: true });
 
     const pad2 = (n) => String(n).padStart(2, '0');
     const formatDate = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
@@ -1295,14 +1454,31 @@
 
         updateCounts(items.length, upcoming.length);
 
+        const visibleUpcoming = upcoming.slice(0, 50);
         if (listEl) {
-          if (!upcoming.length) {
+          if (!visibleUpcoming.length) {
             listEl.innerHTML = emptyHtml;
           } else {
-            listEl.innerHTML = upcoming.slice(0, 50).map(renderAppointment).join('');
+            listEl.innerHTML = visibleUpcoming.map(renderAppointment).join('');
           }
         }
-        renderNext(upcoming[0]);
+        renderNext(visibleUpcoming[0]);
+
+        const nextIds = new Set(
+          visibleUpcoming
+            .map((appt) => String(appt.id ?? '').trim())
+            .filter((id) => id.length)
+        );
+        if (hasLoaded) {
+          let hasNew = false;
+          nextIds.forEach((id) => {
+            if (!previousIds.has(id)) hasNew = true;
+          });
+          if (hasNew) playSound();
+        } else {
+          hasLoaded = true;
+        }
+        previousIds = nextIds;
       } catch (err) {
         console.warn('Summary refresh failed', err);
       }
@@ -1313,9 +1489,56 @@
       refreshTimer = setInterval(refreshSummary, refreshMs);
     };
 
+    const openDetail = async (appointmentId) => {
+      if (!appointmentId) return;
+      try {
+        const url = `${apiBase}/${encodeURIComponent(appointmentId)}`;
+        const res = await fetch(url, { headers: { Accept: 'application/json' }, cache: 'no-store' });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) return;
+        const startDate = parseDate(data.start_time);
+        const endDate = parseDate(data.end_time);
+        const eventPayload = {
+          id: data.id,
+          title: data.title,
+          description: data.description || '',
+          status: data.status || 'programada',
+          start: startDate,
+          end: endDate,
+          client_id: data.client_id ?? null,
+        };
+        if (window.vetflowCalendar?.openEventModal) {
+          window.vetflowCalendar.openEventModal(eventPayload);
+          return;
+        }
+        if (typeof window.openEdit === 'function') {
+          window.openEdit(
+            Number(eventPayload.id),
+            String(eventPayload.title || ''),
+            String(eventPayload.description || ''),
+            data.start_time || '',
+            data.end_time || '',
+            String(eventPayload.status || 'programada'),
+            eventPayload.client_id
+          );
+        }
+      } catch (err) {
+        console.warn('No se pudo abrir detalle de cita', err);
+      }
+    };
+
     const init = () => {
       refreshSummary();
       startRefreshLoop();
+      if (listEl) {
+        listEl.addEventListener('click', (event) => {
+          const card = event.target.closest('.appointment-card');
+          if (!card || !listEl.contains(card)) return;
+          const id = card.getAttribute('data-appointment-id');
+          if (!id) return;
+          openDetail(id);
+        });
+      }
       document.querySelectorAll('[data-tab-target="summary"]').forEach((btn) => {
         btn.addEventListener('click', refreshSummary);
       });
@@ -1723,6 +1946,93 @@
 
         // Hacemos scroll suave hacia el formulario
         uploadDrawer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  })();
+</script>
+<script>
+  (() => {
+    const form = document.getElementById('textUploadForm');
+    if (!form) return;
+
+    const titleInput = document.getElementById('textNoteTitle');
+    const tagsInput = document.getElementById('textNoteTags');
+    const notesInput = document.getElementById('textNoteNotes');
+    const contentInput = document.getElementById('textNoteContent');
+    const statusEl = document.getElementById('textNoteStatus');
+    const submitBtn = document.getElementById('textNoteSubmit');
+
+    const setStatus = (msg, type) => {
+      if (!statusEl) return;
+      statusEl.textContent = msg || '';
+      statusEl.classList.remove('text-danger', 'text-success');
+      if (type === 'error') statusEl.classList.add('text-danger');
+      if (type === 'success') statusEl.classList.add('text-success');
+    };
+
+    const safeFilename = (value) =>
+      String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9_-]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 48)
+        .toLowerCase();
+
+    const timestampSuffix = () => {
+      const now = new Date();
+      const pad = (num) => String(num).padStart(2, '0');
+      return `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}`;
+    };
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const content = (contentInput?.value || '').trim();
+      if (!content) {
+        setStatus('Escribe una nota antes de subir.', 'error');
+        contentInput?.focus();
+        return;
+      }
+
+      const rawTitle = (titleInput?.value || '').trim();
+      const safeTitle = safeFilename(rawTitle);
+      const filename = safeTitle ? `${safeTitle}.txt` : `nota-${timestampSuffix()}.txt`;
+
+      const file = new File([content], filename, { type: 'text/plain' });
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const tags = (tagsInput?.value || '').trim();
+      const notes = (notesInput?.value || '').trim();
+      if (tags) formData.append('tags', tags);
+      if (notes) formData.append('notes', notes);
+
+      setStatus('', null);
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Subiendo...';
+      }
+
+      try {
+        const res = await fetch('/upload', {
+          method: 'POST',
+          body: formData,
+          credentials: 'same-origin'
+        });
+        if (!res.ok) {
+          throw new Error(`Error ${res.status}`);
+        }
+        setStatus('Nota creada. Recargando...', 'success');
+        form.reset();
+        setTimeout(() => window.location.reload(), 600);
+      } catch (err) {
+        setStatus('No se pudo subir la nota.', 'error');
+        console.error('Error subiendo nota', err);
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Crear TXT';
+        }
       }
     });
   })();

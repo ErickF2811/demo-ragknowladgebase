@@ -70,6 +70,7 @@
   let calendar = null
   let enabled = true
   let hasRendered = false
+  let hasScrolledInitial = false
   const LOCKED_STATUS_VALUES = ['cancelada', 'completada', 'no_show']
   const isStatusLocked = (status) => LOCKED_STATUS_VALUES.includes(String(status || '').toLowerCase())
 
@@ -166,8 +167,8 @@
       return
     }
     calendar = new window.FullCalendar.Calendar(container, {
-      // Default: vista semanal tipo agenda
-      initialView: 'timeGridWeek',
+      // Default: vista diaria tipo agenda
+      initialView: 'timeGridDay',
       // Altura fija para habilitar scroll vertical en timeGrid
       height: 650,
       locale: 'es',
@@ -245,43 +246,68 @@
     return !!(pane && pane.classList.contains('active'))
   }
 
-  const renderIfVisible = async () => {
+  const checkLayout = () => {
+    if (!calendar) return
+    const container = root()
+    if (!container || container.offsetParent === null) return
+
+    try {
+      calendar.updateSize()
+    } catch (e) { /* ignore */ }
+
+    if (!hasScrolledInitial) {
+      if (String(calendar.view?.type || '').startsWith('timeGrid')) {
+        try {
+          calendar.scrollToTime(scrollTimeAroundNow())
+          hasScrolledInitial = true
+        } catch { /* ignore */ }
+      } else {
+        hasScrolledInitial = true
+      }
+    }
+  }
+
+  const renderIfVisible = async (forceRefetch = true) => {
     if (!enabled) return
     ensureCalendar()
     if (!calendar) return
     const container = root()
     if (!container) return
     if (!isCalendarTabActive()) return
-    // Si el contenedor está hidden/display:none, FullCalendar renderiza en blanco.
-    if (container.offsetParent === null) return
+
+    let justRendered = false
     if (!hasRendered) {
       calendar.render()
       hasRendered = true
-      // Asegurar scroll inicial alrededor de la hora actual
-      if (String(calendar.view?.type || '').startsWith('timeGrid')) {
-        try {
-          calendar.scrollToTime(scrollTimeAroundNow())
-        } catch {
-          // ignore
-        }
-      }
+      justRendered = true
     }
-    calendar.updateSize?.()
-    calendar.refetchEvents()
+
+    checkLayout()
+
+    // Only refetch if we didn't just render (render() fetches automatically)
+    // and if forceRefetch is requested
+    if (!justRendered && forceRefetch) {
+      calendar.refetchEvents()
+    }
+
     setHeaderText()
     syncViewButtons()
   }
 
   const scheduleRenderRetries = () => {
+    // Phase 1: Immediate attempt with potential refetch
+    void renderIfVisible(true)
+
+    // Phase 2: Stabilization loop (adjust layout as CSS transitions finish)
     let attempts = 0
     const tick = () => {
-      attempts += 1
-      void renderIfVisible()
-      if (hasRendered || attempts >= 12) return
-      setTimeout(tick, 80)
+      attempts++
+      // Only check layout/render, do not force refetch
+      void renderIfVisible(false)
+      // Run for approx 2.5 seconds to cover slow transitions
+      if (attempts < 25) setTimeout(tick, 100)
     }
-    // Dejar que el layout/DOM se estabilice (tab switching + CSS)
-    setTimeout(tick, 30)
+    setTimeout(tick, 50)
   }
 
   document.addEventListener('DOMContentLoaded', () => {
@@ -353,6 +379,10 @@
 
   window.addEventListener('load', () => {
     // Fallback: algunos estilos cargan tarde y FullCalendar necesita updateSize/render.
+    scheduleRenderRetries()
+  })
+
+  window.addEventListener('vetflow:calendarTabActivated', () => {
     scheduleRenderRetries()
   })
 
