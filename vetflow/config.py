@@ -14,6 +14,8 @@ class Config:
         self.N8N_WEBHOOK_URL = os.getenv("N8N_WEBHOOK_URL", "")
         self.N8N_DELETE_WEBHOOK_URL = os.getenv("N8N_DELETE_WEBHOOK_URL", "")
         self.N8N_NEW_WORKSPACE_WEBHOOK_URL = os.getenv("N8N_NEW_WORKSPACE_WEBHOOK_URL", "")
+        self.N8N_CALENDAR_WEBHOOK_URL = os.getenv("N8N_CALENDAR_WEBHOOK_URL", "")
+        self.N8N_CALENDAR_WEBHOOK_AUTH = os.getenv("N8N_CALENDAR_WEBHOOK_AUTH", "")
         self.EVOLUTION_API_BASE_URL = os.getenv("EVOLUTION_API_BASE_URL", "")
         self.EVOLUTION_API_KEY = os.getenv("EVOLUTION_API_KEY", "")
         # En Evolution Manager el "Channel" se muestra como "Baileys"

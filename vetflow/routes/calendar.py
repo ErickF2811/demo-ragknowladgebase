@@ -1,9 +1,10 @@
 import json
 import logging
-from flask import Blueprint, flash, jsonify, redirect, request, url_for
+from flask import Blueprint, flash, jsonify, redirect, request, url_for, session, g
 
 from ..auth import AuthError, require_authenticated_request
 from ..services import calendar as calendar_service
+from ..services import workspaces as workspace_service
 from .ui import ensure_workspace_from_slug
 
 calendar_bp = Blueprint("calendar", __name__)
@@ -52,6 +53,16 @@ def _parse_payload():
     return {}, "empty"
 
 
+def _resolve_workspace_from_session():
+    workspace_id = session.get("workspace_id")
+    if workspace_id:
+        return workspace_service.get_workspace(workspace_id)
+    workspace_key = session.get("workspace_schema") or getattr(g, "workspace_schema", None)
+    if workspace_key:
+        return workspace_service.get_workspace_by_key(workspace_key)
+    return None
+
+
 @calendar_bp.route("/calendar", methods=["POST"])
 def create_calendar():
     title = request.form.get("title")
@@ -74,11 +85,29 @@ def create_calendar():
         return redirect(url_for("ui.index"))
 
     try:
-        calendar_service.create_appointment(title, description, start_raw, end_raw, status_raw, timezone_raw, client_id)
+        row = calendar_service.create_appointment(
+            title, description, start_raw, end_raw, status_raw, timezone_raw, client_id
+        )
     except ValueError as ex:
         flash(str(ex), "danger")
         return redirect(url_for("ui.index"))
 
+    workspace = _resolve_workspace_from_session()
+    calendar_service.notify_calendar_webhook(
+        "calendar.created",
+        row,
+        workspace=workspace,
+        changes={
+            "title": title,
+            "description": description,
+            "start_time": start_raw,
+            "end_time": end_raw,
+            "status": status_raw,
+            "timezone": timezone_raw,
+            "client_id": client_id,
+        },
+        source="form",
+    )
     flash("Cita creada", "success")
     return redirect(url_for("ui.index"))
 
@@ -107,6 +136,22 @@ def update_calendar(appointment_id: int):
         flash(str(ex), "danger")
         return redirect(url_for("ui.index"))
     if updated:
+        workspace = _resolve_workspace_from_session()
+        calendar_service.notify_calendar_webhook(
+            "calendar.updated",
+            updated,
+            workspace=workspace,
+            changes={
+                "title": title,
+                "description": description,
+                "start_time": start_raw,
+                "end_time": end_raw,
+                "status": status_raw,
+                "timezone": timezone_raw,
+                "client_id": client_id,
+            },
+            source="form",
+        )
         flash("Cita actualizada", "success")
     else:
         flash("Cita no encontrada", "danger")
@@ -117,6 +162,14 @@ def update_calendar(appointment_id: int):
 def delete_calendar(appointment_id: int):
     deleted = calendar_service.delete_appointment(appointment_id)
     if deleted:
+        workspace = _resolve_workspace_from_session()
+        calendar_service.notify_calendar_webhook(
+            "calendar.deleted",
+            deleted,
+            workspace=workspace,
+            changes={"id": appointment_id},
+            source="form",
+        )
         flash("Cita eliminada", "success")
     else:
         flash("Cita no encontrada", "danger")
@@ -161,6 +214,14 @@ def api_calendar_create():
     logger.info("API calendar create source=%s payload=%s", source, payload)
     try:
         row = calendar_service.api_create(payload)
+        workspace = _resolve_workspace_from_session()
+        calendar_service.notify_calendar_webhook(
+            "calendar.created",
+            row,
+            workspace=workspace,
+            changes=payload,
+            source=source,
+        )
         return jsonify(row), 201
     except ValueError as ex:
         return jsonify({"error": str(ex)}), 400
@@ -168,12 +229,20 @@ def api_calendar_create():
 
 @calendar_bp.route("/w/<slug>/api/calendar", methods=["POST"])
 def api_calendar_create_ws(slug: str):
-    if not ensure_workspace_from_slug(slug):
+    workspace = ensure_workspace_from_slug(slug)
+    if not workspace:
         return jsonify({"error": "workspace_not_found"}), 404
     payload, source = _parse_payload()
     logger.info("API calendar create slug=%s source=%s payload=%s", slug, source, payload)
     try:
         row = calendar_service.api_create(payload)
+        calendar_service.notify_calendar_webhook(
+            "calendar.created",
+            row,
+            workspace=workspace,
+            changes=payload,
+            source=source,
+        )
         return jsonify(row), 201
     except ValueError as ex:
         return jsonify({"error": str(ex)}), 400
@@ -185,6 +254,14 @@ def api_calendar_update(appointment_id: int):
     logger.info("API calendar update id=%s source=%s payload=%s", appointment_id, source, payload)
     try:
         row = calendar_service.api_update(appointment_id, payload)
+        workspace = _resolve_workspace_from_session()
+        calendar_service.notify_calendar_webhook(
+            "calendar.updated",
+            row,
+            workspace=workspace,
+            changes=payload,
+            source=source,
+        )
         return jsonify(row)
     except ValueError as ex:
         return jsonify({"error": str(ex)}), 400
@@ -194,12 +271,20 @@ def api_calendar_update(appointment_id: int):
 
 @calendar_bp.route("/w/<slug>/api/calendar/<int:appointment_id>", methods=["PUT"])
 def api_calendar_update_ws(slug: str, appointment_id: int):
-    if not ensure_workspace_from_slug(slug):
+    workspace = ensure_workspace_from_slug(slug)
+    if not workspace:
         return jsonify({"error": "workspace_not_found"}), 404
     payload, source = _parse_payload()
     logger.info("API calendar update slug=%s id=%s source=%s payload=%s", slug, appointment_id, source, payload)
     try:
         row = calendar_service.api_update(appointment_id, payload)
+        calendar_service.notify_calendar_webhook(
+            "calendar.updated",
+            row,
+            workspace=workspace,
+            changes=payload,
+            source=source,
+        )
         return jsonify(row)
     except ValueError as ex:
         return jsonify({"error": str(ex)}), 400
@@ -210,16 +295,34 @@ def api_calendar_update_ws(slug: str, appointment_id: int):
 @calendar_bp.route("/api/calendar/<int:appointment_id>", methods=["DELETE"])
 def api_calendar_delete(appointment_id: int):
     try:
-        return jsonify(calendar_service.api_delete(appointment_id))
+        data = calendar_service.api_delete(appointment_id)
+        workspace = _resolve_workspace_from_session()
+        calendar_service.notify_calendar_webhook(
+            "calendar.deleted",
+            data.get("appointment"),
+            workspace=workspace,
+            changes={"id": appointment_id},
+            source="api",
+        )
+        return jsonify(data)
     except LookupError:
         return jsonify({"error": "not_found"}), 404
 
 
 @calendar_bp.route("/w/<slug>/api/calendar/<int:appointment_id>", methods=["DELETE"])
 def api_calendar_delete_ws(slug: str, appointment_id: int):
-    if not ensure_workspace_from_slug(slug):
+    workspace = ensure_workspace_from_slug(slug)
+    if not workspace:
         return jsonify({"error": "workspace_not_found"}), 404
     try:
-        return jsonify(calendar_service.api_delete(appointment_id))
+        data = calendar_service.api_delete(appointment_id)
+        calendar_service.notify_calendar_webhook(
+            "calendar.deleted",
+            data.get("appointment"),
+            workspace=workspace,
+            changes={"id": appointment_id},
+            source="api",
+        )
+        return jsonify(data)
     except LookupError:
         return jsonify({"error": "not_found"}), 404

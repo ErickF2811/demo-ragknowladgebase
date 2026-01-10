@@ -37,6 +37,8 @@ VETFLOW_API_KEY=
 N8N_WEBHOOK_URL=https://tu-n8n/webhook/rag-files
 N8N_DELETE_WEBHOOK_URL=https://tu-n8n/webhook/rag-files-deleted
 N8N_NEW_WORKSPACE_WEBHOOK_URL=https://tu-n8n/webhook/newWorkpace
+N8N_CALENDAR_WEBHOOK_URL=https://tu-n8n/webhook/evento-calendario
+N8N_CALENDAR_WEBHOOK_AUTH=usuario:clave
 EVOLUTION_API_BASE_URL=http://localhost:8080
 EVOLUTION_API_KEY=tu-api-key
 EVOLUTION_API_INTEGRATION=WHATSAPP-BAILEYS
@@ -283,6 +285,8 @@ curl -X POST "http://localhost:5000/w/demo-vetflow/api/clientes" \
 ## Integración RAG/n8n
 - Configura `N8N_WEBHOOK_URL` (ingesta/procesamiento) y `N8N_DELETE_WEBHOOK_URL` (borrado).
 - (Opcional) `N8N_NEW_WORKSPACE_WEBHOOK_URL`: se llama al crear un workspace para que n8n haga aprovisionamiento externo.
+- (Opcional) `N8N_CALENDAR_WEBHOOK_URL`: se llama al crear/editar/eliminar citas del calendario.
+  - `N8N_CALENDAR_WEBHOOK_AUTH`: header Authorization opcional (usa "user:pass" para Basic o "Basic <token>").
   - Si usas n8n en **modo test** (`/webhook-test/...`), el webhook solo responde cuando el workflow está en **Listening for test event** y la URL suele incluir un identificador; si no, verás `404 ... webhook is not registered`.
   - Para producción usa `/webhook/...` con el workflow **activo** (Activated) para que siempre reciba eventos.
 - **Autenticación (n8n -> panel)**
@@ -294,9 +298,11 @@ curl -X POST "http://localhost:5000/w/demo-vetflow/api/clientes" \
   - **Al subir un archivo** (`POST /upload`): se crea el registro con `status=uploaded` y luego se intenta notificar a n8n con `N8N_WEBHOOK_URL` (best-effort).
   - **Al pulsar "Enviar al bot"** (UI): llama explícitamente a `N8N_WEBHOOK_URL`; si n8n responde `2xx` el panel actualiza el registro a `status=processing`.
   - **Al solicitar borrado** (`POST /files/<id>/delete` o `DELETE /w/<schema_name>/api/files/<id>`): primero marca el registro como `status=deleting` y luego intenta notificar a n8n con `N8N_DELETE_WEBHOOK_URL`.
+  - **Calendario**: al crear/editar/eliminar citas se notifica a `N8N_CALENDAR_WEBHOOK_URL`.
 - **Qué se envía (payload JSON)**
   - Ingesta/proceso: `file_id`, `filename`, `blob_path`, `blob_url`, `folder`, `tags`, `notes`, `status`, `schema`.
   - Borrado: `file_id`, `filename`, `blob_path`, `blob_url`, `container`, `schema`.
+  - Calendario: `event`, `appointment`, `workspace`, `changes`, `source`.
   - `schema` es el schema del workspace actual (multi-tenancy); n8n debe devolverlo/usar ese contexto si interactúa con la API del panel.
 - **Qué pasa si el webhook falla**
   - Subida (`notify_ingest_webhook`): si el `POST` a n8n falla (timeout/connection/error), **no rompe la subida**; se loguea un warning y el archivo queda en `uploaded`.
@@ -473,7 +479,7 @@ Para llevar la imagen a un registro (ej. Docker Hub, Azure CR, AWS ECR):
 1. **Construir la imagen**:
    ```bash
    # Sintaxis: docker build -t <usuario>/<nombre-imagen>:<tag> .
-   docker build -t erifcamp/flow-panel:v1.4.2 .
+   docker build -t erifcamp/flow-panel:v1.4.3 .
    ```
 
 2. **Login en el registro**:
@@ -483,7 +489,7 @@ Para llevar la imagen a un registro (ej. Docker Hub, Azure CR, AWS ECR):
 
 3. **Subir la imagen (Push)**:
    ```bash
-   docker push erifcamp/flow-panel:v1.4.2
+   docker push erifcamp/flow-panel:v1.4.3
    ```
 
 ### Variables de Entorno en Docker

@@ -4,6 +4,7 @@ from flask import Blueprint, jsonify, request
 
 from ..auth import AuthError, require_authenticated_request
 from ..services import clientes as clientes_service
+from ..services import calendar as calendar_service
 from .ui import ensure_workspace_from_slug
 
 logger = logging.getLogger(__name__)
@@ -122,11 +123,19 @@ def api_clientes_add_note(slug: str, client_id: int):
 
 @clientes_bp.route("/w/<slug>/api/clientes/<int:client_id>/citas", methods=["POST"])
 def api_clientes_create_appt(slug: str, client_id: int):
-    if not ensure_workspace_from_slug(slug):
+    workspace = ensure_workspace_from_slug(slug)
+    if not workspace:
         return jsonify({"error": "workspace_not_found"}), 404
     payload = _json()
     try:
         appt = clientes_service.create_appointment_for_client(client_id, payload)
+        calendar_service.notify_calendar_webhook(
+            "calendar.created",
+            appt,
+            workspace=workspace,
+            changes=payload,
+            source="clientes_api",
+        )
         return jsonify({"appointment": appt}), 201
     except ValueError as ex:
         return jsonify({"error": str(ex)}), 400

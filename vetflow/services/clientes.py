@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional
 from psycopg import errors
 
 from ..db import get_db
+from ..serializers import row_to_appointment_api
 from ..utils import parse_datetime
 
 logger = logging.getLogger(__name__)
@@ -364,4 +365,4 @@ def create_appointment_for_client(client_id: int, payload: Dict[str, Any]) -> Di
 
         conn.execute("UPDATE clients SET updated_at=NOW() WHERE id=%s", (client_id,))
 
-    return dict(row)
+    return row_to_appointment_api(row)
