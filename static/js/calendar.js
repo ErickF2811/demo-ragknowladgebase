@@ -183,6 +183,17 @@
       (opt) => `<option value="${opt.value}" ${opt.value === selected ? "selected" : ""}>${opt.label}</option>`
     ).join("");
   };
+  const renderDurationOptions = (selectedValue) => {
+    const selectedMinutes = parseInt(selectedValue, 10);
+    const safeSelected = Number.isFinite(selectedMinutes) ? selectedMinutes : null;
+    const options = DURATION_OPTIONS.map((minutes) => {
+      const label = minutes === 60 ? "1 h" : minutes === 90 ? "1 h 30" : minutes === 120 ? "2 h" : `${minutes} min`;
+      const selectedAttr = minutes === safeSelected ? "selected" : "";
+      return `<option value="${minutes}" ${selectedAttr}>${label}</option>`;
+    }).join("");
+    const customSelected = safeSelected && !DURATION_OPTIONS.includes(safeSelected) ? "selected" : "";
+    return `${options}<option value="custom" ${customSelected}>Otra...</option>`;
+  };
   const renderStatusBadge = (statusValue) => {
     const value = statusValue || DEFAULT_STATUS;
     const label = STATUS_LABELS[value] || value;
@@ -192,13 +203,22 @@
   const isStatusLocked = (status) => LOCKED_STATUS_VALUES.includes(String(status || "").toLowerCase());
 
   window.openEdit = (id, title, description, start, end, status = DEFAULT_STATUS, clientId = null) => {
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    const durationMinutes = !isNaN(startDate.getTime()) && !isNaN(endDate.getTime())
+      ? Math.max(5, Math.round((endDate.getTime() - startDate.getTime()) / 60000))
+      : SLOT_MINUTES;
+    const customDuration = DURATION_OPTIONS.includes(durationMinutes) ? "" : durationMinutes;
     const formHtml = `
       <form method="post" action="/calendar/${id}/update" onsubmit="
         const s = this.querySelector('[name=ui_start]').value;
-        const e = this.querySelector('[name=ui_end]').value;
-        this.querySelector('[name=start_time]').value = window.formatLocalPayload(s);
-        this.querySelector('[name=start_time]').value = window.formatLocalPayload(s);
-        this.querySelector('[name=end_time]').value = window.formatLocalPayload(e);
+        const durSelect = this.querySelector('[name=ui_duration]').value;
+        const durCustom = this.querySelector('[name=ui_duration_custom]').value;
+        const minutes = durSelect === 'custom' ? parseInt(durCustom, 10) : parseInt(durSelect, 10);
+        const startDate = new Date(s);
+        const endDate = new Date(startDate.getTime() + (minutes || 0) * 60000);
+        this.querySelector('[name=start_time]').value = window.formatLocalPayload(startDate);
+        this.querySelector('[name=end_time]').value = window.formatLocalPayload(endDate);
         this.querySelector('[name=timezone]').value = Intl.DateTimeFormat().resolvedOptions().timeZone;
       ">
         <div class="mb-2"><label class="form-label">Titulo</label><input class="form-control" name="title" value="${title}"></div>
@@ -216,7 +236,16 @@
         <input type="hidden" name="timezone">
         
         <div class="mb-2"><label class="form-label">Inicio</label><input class="form-control" type="datetime-local" name="ui_start" value="${toInput(start)}" required></div>
-        <div class="mb-2"><label class="form-label">Fin</label><input class="form-control" type="datetime-local" name="ui_end" value="${toInput(end)}" required></div>
+        <div class="mb-2">
+          <label class="form-label">Duracion</label>
+          <div class="d-flex gap-2 align-items-center">
+            <select class="form-select" name="ui_duration" required>
+              ${renderDurationOptions(durationMinutes)}
+            </select>
+            <input class="form-control d-none" type="number" name="ui_duration_custom" min="5" step="5"
+              placeholder="Minutos" value="${customDuration}">
+          </div>
+        </div>
         <div class="mb-2"><label class="form-label">Estado</label>
           <select class="form-select" name="status">
             ${renderStatusOptions(status)}
@@ -230,6 +259,18 @@
     document.body.appendChild(modalEl);
     const modal = new bootstrap.Modal(modalEl);
     modal.show();
+
+    const durationSelect = modalEl.querySelector('[name="ui_duration"]');
+    const durationCustom = modalEl.querySelector('[name="ui_duration_custom"]');
+    const syncDurationInputs = () => {
+      if (!durationSelect || !durationCustom) return;
+      const showCustom = durationSelect.value === "custom";
+      durationCustom.classList.toggle("d-none", !showCustom);
+      durationCustom.required = showCustom;
+      if (!showCustom) durationCustom.value = "";
+    };
+    durationSelect?.addEventListener("change", syncDurationInputs);
+    syncDurationInputs();
 
     const clientSelect = modalEl.querySelector("[data-client-select]");
     populateClientSelect(clientSelect, clientId, clientsCache || []);
@@ -288,7 +329,8 @@
   const eventStartIso = document.getElementById("eventStartIso");
   const eventEndIso = document.getElementById("eventEndIso");
   const eventStartInput = document.getElementById("eventStartInput");
-  const eventEndInput = document.getElementById("eventEndInput");
+  const eventDurationSelect = document.getElementById("eventDurationSelect");
+  const eventDurationCustom = document.getElementById("eventDurationCustom");
   const eventStatusSelect = document.getElementById("eventStatusSelect");
   const eventClientSelect = document.getElementById("eventClientSelect");
   const appointmentsTableBody = document.getElementById("appointmentsTableBody");
@@ -324,6 +366,7 @@
   const DAY_END_HOUR = 24;
   const DEFAULT_SCROLL_HOUR = 6;
   const DAY_MS = 24 * 60 * 60 * 1000;
+  const DURATION_OPTIONS = [15, 30, 60, 90, 120];
   let timelineMetrics = null;
   let dragState = null;
   let savedTimelineScrollTop = null;
@@ -452,17 +495,63 @@
     const endHour = endDate.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
     return sameDayRange ? `${startDay} ${startHour} - ${endHour}` : `${startDay} ${startHour} -> ${endDay} ${endHour}`;
   };
+  const parseDurationValue = (value) => {
+    const minutes = parseInt(value, 10);
+    return Number.isFinite(minutes) && minutes > 0 ? minutes : null;
+  };
+  const getDurationFromControls = (selectEl, customEl) => {
+    if (!selectEl) return null;
+    const raw = selectEl.value;
+    if (!raw) return null;
+    if (raw === "custom") return parseDurationValue(customEl?.value);
+    return parseDurationValue(raw);
+  };
+  const setDurationControls = (selectEl, customEl, minutes) => {
+    if (!selectEl) return;
+    const rounded = Number.isFinite(minutes) ? Math.round(minutes) : null;
+    if (rounded && DURATION_OPTIONS.includes(rounded)) {
+      selectEl.value = String(rounded);
+      if (customEl) {
+        customEl.classList.add("d-none");
+        customEl.required = false;
+        customEl.value = "";
+      }
+      return;
+    }
+    if (rounded) {
+      selectEl.value = "custom";
+      if (customEl) {
+        customEl.classList.remove("d-none");
+        customEl.required = true;
+        customEl.value = String(rounded);
+      }
+      return;
+    }
+    selectEl.value = "";
+    if (customEl) {
+      customEl.classList.add("d-none");
+      customEl.required = false;
+      customEl.value = "";
+    }
+  };
+  const syncCustomDurationVisibility = (selectEl, customEl) => {
+    if (!selectEl || !customEl) return;
+    const showCustom = selectEl.value === "custom";
+    customEl.classList.toggle("d-none", !showCustom);
+    customEl.required = showCustom;
+    if (!showCustom) customEl.value = "";
+  };
   function updateRangeLabelFromInputs() {
     if (!eventRangeLabel) return;
     const startVal = eventStartInput?.value;
-    const endVal = eventEndInput?.value;
+    const durationMinutes = getDurationFromControls(eventDurationSelect, eventDurationCustom);
     // parseLocalDate maneja "yyyy-MM-ddThh:mm"
     const startDate = parseLocalDate(startVal);
-    const endDate = parseLocalDate(endVal);
-    if (!startDate || !endDate) {
+    if (!startDate || !durationMinutes) {
       eventRangeLabel.textContent = "";
       return;
     }
+    const endDate = new Date(startDate.getTime() + durationMinutes * 60000);
     eventRangeLabel.textContent = formatRangeLabelText(startDate, endDate);
   }
 
@@ -470,14 +559,18 @@
     if (!startDate || !endDate) return;
     // Inputs `datetime-local` requieren formato local (YYYY-MM-DDTHH:MM)
     const startLocal = toInput(startDate);
-    const endLocal = toInput(endDate);
+    const durationMinutes = Math.round((endDate.getTime() - startDate.getTime()) / 60000);
+    const safeDuration = durationMinutes > 0 ? durationMinutes : SLOT_MINUTES;
 
     if (eventStartInput) eventStartInput.value = startLocal;
-    if (eventEndInput) eventEndInput.value = endLocal;
+    setDurationControls(eventDurationSelect, eventDurationCustom, safeDuration);
 
     // Mantener hidden ISO (con offset) para integraciones si existen
     if (eventStartIso) eventStartIso.value = formatLocalPayload(startDate);
-    if (eventEndIso) eventEndIso.value = formatLocalPayload(endDate);
+    if (eventEndIso) {
+      const endDateSafe = new Date(startDate.getTime() + safeDuration * 60000);
+      eventEndIso.value = formatLocalPayload(endDateSafe);
+    }
 
     // Actualizamos el label visual
     updateRangeLabelFromInputs();
@@ -485,19 +578,28 @@
 
   const handleCreateInputChange = () => {
     // Sincronizar hidden ISO (con offset) a partir del valor local seleccionado
-    if (eventStartInput && eventStartIso) {
-      const d = parseLocalDate(eventStartInput.value);
-      eventStartIso.value = d ? formatLocalPayload(d) : eventStartInput.value;
+    const startDate = eventStartInput ? parseLocalDate(eventStartInput.value) : null;
+    const durationMinutes = getDurationFromControls(eventDurationSelect, eventDurationCustom);
+    if (eventStartIso) {
+      eventStartIso.value = startDate ? formatLocalPayload(startDate) : eventStartInput?.value || "";
     }
-    if (eventEndInput && eventEndIso) {
-      const d = parseLocalDate(eventEndInput.value);
-      eventEndIso.value = d ? formatLocalPayload(d) : eventEndInput.value;
+    if (eventEndIso) {
+      if (startDate && durationMinutes) {
+        const endDate = new Date(startDate.getTime() + durationMinutes * 60000);
+        eventEndIso.value = formatLocalPayload(endDate);
+      } else {
+        eventEndIso.value = "";
+      }
     }
 
     updateRangeLabelFromInputs();
   };
   eventStartInput?.addEventListener("input", handleCreateInputChange);
-  eventEndInput?.addEventListener("input", handleCreateInputChange);
+  eventDurationSelect?.addEventListener("change", () => {
+    syncCustomDurationVisibility(eventDurationSelect, eventDurationCustom);
+    handleCreateInputChange();
+  });
+  eventDurationCustom?.addEventListener("input", handleCreateInputChange);
   updateRangeLabelFromInputs();
   const getRoundedDefaultRange = () => {
     const start = new Date();
@@ -1451,7 +1553,14 @@
           <div class="mb-2"><label class="form-label">Notas</label><textarea class="form-control" id="detailDesc" rows="2"></textarea></div>
           <div class="row g-2">
             <div class="col"><label class="form-label">Inicio</label><input type="datetime-local" class="form-control" id="detailStart" required></div>
-            <div class="col"><label class="form-label">Fin</label><input type="datetime-local" class="form-control" id="detailEnd" required></div>
+            <div class="col">
+              <label class="form-label">Duracion</label>
+              <select class="form-select" id="detailDurationSelect" required>
+                ${renderDurationOptions()}
+              </select>
+              <input type="number" class="form-control mt-2 d-none" id="detailDurationCustom" min="5" step="5"
+                placeholder="Minutos">
+            </div>
           </div>
           <div class="mt-3">
             <label class="form-label">Cliente (opcional)</label>
@@ -1477,11 +1586,16 @@
   const detailTitle = eventDetailModalEl.querySelector("#detailTitle");
   const detailDesc = eventDetailModalEl.querySelector("#detailDesc");
   const detailStart = eventDetailModalEl.querySelector("#detailStart");
-  const detailEnd = eventDetailModalEl.querySelector("#detailEnd");
+  const detailDurationSelect = eventDetailModalEl.querySelector("#detailDurationSelect");
+  const detailDurationCustom = eventDetailModalEl.querySelector("#detailDurationCustom");
   const detailStatus = eventDetailModalEl.querySelector("#detailStatus");
   const detailClient = eventDetailModalEl.querySelector("#detailClient");
   const detailDeleteBtn = eventDetailModalEl.querySelector("#detailDeleteBtn");
   // currentEventId ya declarado arriba
+
+  detailDurationSelect?.addEventListener("change", () =>
+    syncCustomDurationVisibility(detailDurationSelect, detailDurationCustom)
+  );
 
   async function deleteEvent(id) {
     try {
@@ -1523,7 +1637,6 @@
     detailTitle.value = ev.title || "";
     detailDesc.value = ev.description || "";
     detailStart.value = toInput(start?.toISOString ? start.toISOString() : start);
-    detailEnd.value = toInput(end?.toISOString ? end.toISOString() : end);
     detailStatus.value = ev.status || DEFAULT_STATUS;
 
     const currentClientId = ev.client_id ?? null;
@@ -1542,6 +1655,13 @@
 
     const startDate = start instanceof Date ? start : new Date(start);
     const endDate = end instanceof Date ? end : new Date(end);
+    if (detailDurationSelect) {
+      const minutes = !isNaN(startDate.getTime()) && !isNaN(endDate.getTime())
+        ? Math.max(5, Math.round((endDate.getTime() - startDate.getTime()) / 60000))
+        : SLOT_MINUTES;
+      setDurationControls(detailDurationSelect, detailDurationCustom, minutes);
+      syncCustomDurationVisibility(detailDurationSelect, detailDurationCustom);
+    }
     currentEventSnapshot = {
       title: detailTitle.value,
       description: detailDesc.value,
@@ -1559,12 +1679,13 @@
       eventDetailModal.hide();
       return;
     }
-    const startVal = new Date(detailStart.value);
-    const endVal = new Date(detailEnd.value);
-    if (endVal <= startVal) {
-      alert("El fin debe ser mayor que el inicio");
+    const startVal = parseLocalDate(detailStart.value);
+    const durationMinutes = getDurationFromControls(detailDurationSelect, detailDurationCustom);
+    if (!startVal || isNaN(startVal.getTime()) || !durationMinutes) {
+      alert("Completa inicio y duracion");
       return;
     }
+    const endVal = new Date(startVal.getTime() + durationMinutes * 60000);
     const nextTitle = detailTitle.value.trim();
     const nextDesc = detailDesc.value.trim();
     const nextStatus = detailStatus.value || DEFAULT_STATUS;
@@ -1670,18 +1791,17 @@
       eventTitleInput.focus();
       return;
     }
-    const startRaw = eventStartInput?.value || eventStartIso?.value;
-    const endRaw = eventEndInput?.value || eventEndIso?.value;
-    const startVal = startRaw ? new Date(startRaw) : null;
-    const endVal = endRaw ? new Date(endRaw) : null;
-    if (!startVal || !endVal || isNaN(startVal.getTime()) || isNaN(endVal.getTime())) {
-      alert("Completa las fechas de inicio y fin");
+    const startVal = eventStartInput?.value
+      ? parseLocalDate(eventStartInput.value)
+      : eventStartIso?.value
+        ? new Date(eventStartIso.value)
+        : null;
+    const durationMinutes = getDurationFromControls(eventDurationSelect, eventDurationCustom);
+    if (!startVal || isNaN(startVal.getTime()) || !durationMinutes) {
+      alert("Completa inicio y duracion");
       return;
     }
-    if (endVal <= startVal) {
-      alert("El fin debe ser mayor que el inicio");
-      return;
-    }
+    const endVal = new Date(startVal.getTime() + durationMinutes * 60000);
     const payload = {
       title,
       description: eventDescInput.value.trim(),

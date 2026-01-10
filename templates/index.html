@@ -1100,6 +1100,13 @@
       </svg>
       Clientes
     </button>
+    <button class="side-link" data-tab-target="whatsapp">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 11.5a8.38 8.38 0 0 1-1.1 4.2 8.5 8.5 0 0 1-7.4 4.3 8.38 8.38 0 0 1-4.2-1.1L3 21l1.9-5.3a8.38 8.38 0 0 1-1.1-4.2 8.5 8.5 0 0 1 4.3-7.4 8.38 8.38 0 0 1 4.2-1.1h.5a8.48 8.48 0 0 1 8.2 8.5Z" />
+      </svg>
+      WhatsApp
+    </button>
 
     <div class="side-section-title">Configuración</div>
     <div class="dropdown px-2 mb-2">
@@ -1567,8 +1574,18 @@
             </div>
             <div class="quick-event-datetime">
               <input type="datetime-local" class="form-control" id="eventStartInput" required>
-              <span class="quick-event-separator">a</span>
-              <input type="datetime-local" class="form-control" id="eventEndInput" required>
+              <span class="quick-event-separator">dur</span>
+              <select class="form-select" id="eventDurationSelect" required>
+                <option value="" selected disabled>Duracion</option>
+                <option value="15">15 min</option>
+                <option value="30">30 min</option>
+                <option value="60">1 h</option>
+                <option value="90">1 h 30</option>
+                <option value="120">2 h</option>
+                <option value="custom">Otra...</option>
+              </select>
+              <input type="number" class="form-control d-none" id="eventDurationCustom" min="5" step="5"
+                placeholder="Minutos">
             </div>
           </div>
           <div class="quick-event-row">

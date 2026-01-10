@@ -19,6 +19,8 @@
   const detailBody = $('clienteDetailBody')
   const emptyHint = $('clienteEmptyHint')
   const editBtn = $('clienteEditBtn')
+  const deleteBtn = $('clienteDeleteBtn')
+  const blacklistBadge = $('clienteBlacklistBadge')
 
   const phoneEl = $('clientePhone')
   const emailEl = $('clienteEmail')
@@ -103,11 +105,15 @@
     btn.type = 'button'
     btn.className = 'list-group-item list-group-item-action'
     btn.dataset.clientId = client.id
+    const blacklistChip = client.blacklisted
+      ? '<span class="badge text-bg-danger mt-1">Lista negra</span>'
+      : ''
     btn.innerHTML = `
           <div class="d-flex justify-content-between align-items-start gap-2">
         <div style="min-width:0;">
           <div class="fw-semibold text-truncate">${escapeHtml(client.full_name || '')}</div>
           <div class="small text-muted text-truncate">${escapeHtml(client.phone || client.email || client.id_number || '')}</div>
+          ${blacklistChip}
         </div>
         <span class="badge text-bg-light">${client.id}</span>
       </div>
@@ -199,6 +205,10 @@
     selectedClient = data?.client || null
     const client = selectedClient
     editBtn && (editBtn.disabled = !client)
+    deleteBtn && (deleteBtn.disabled = !client)
+    if (blacklistBadge) {
+      blacklistBadge.classList.toggle('d-none', !(client && client.blacklisted))
+    }
     if (!client) {
       detailBody && (detailBody.style.display = 'none')
       emptyHint && (emptyHint.style.display = '')
@@ -244,6 +254,7 @@
     setStatus(createStatus, '', null)
     const form = new FormData(createForm)
     const payload = Object.fromEntries(form.entries())
+    payload.blacklisted = !!createForm.querySelector('[name="blacklisted"]')?.checked
     try {
       const res = await fetch(api('/clientes'), {
         method: 'POST',
@@ -311,6 +322,22 @@
     const payload = Object.fromEntries(form.entries())
     payload.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
 
+    const durationRaw = String(payload.duration_minutes || '').trim()
+    const durationMinutes = parseInt(durationRaw, 10)
+    if (!payload.start_time || !durationMinutes || durationMinutes <= 0) {
+      setStatus(apptStatus, 'Selecciona fecha y duracion.', 'error')
+      return
+    }
+
+    const startDate = new Date(payload.start_time)
+    if (isNaN(startDate.getTime())) {
+      setStatus(apptStatus, 'Fecha invalida.', 'error')
+      return
+    }
+    const endDate = new Date(startDate.getTime() + durationMinutes * 60000)
+    payload.end_time = endDate
+    delete payload.duration_minutes
+
     const toIso = (v) => {
       if (!v) return ''
       const d = new Date(v)
@@ -354,6 +381,7 @@
     if (editForm.id_number) editForm.id_number.value = client.id_number || ''
     editForm.address.value = client.address || ''
     editForm.notes.value = client.notes || ''
+    if (editForm.blacklisted) editForm.blacklisted.checked = !!client.blacklisted
   }
 
   const setEditError = (msg) => {
@@ -380,6 +408,7 @@
     if (!selectedClient?.id) return
     setEditError('')
     const payload = Object.fromEntries(new FormData(editForm).entries())
+    payload.blacklisted = !!editForm.querySelector('[name="blacklisted"]')?.checked
     try {
       const res = await fetch(api(`/clientes/${selectedClient.id}`), {
         method: 'PUT',
@@ -393,6 +422,22 @@
       await selectClient(selectedClient.id)
     } catch (err) {
       setEditError(err?.message || 'No se pudo guardar')
+    }
+  })
+
+  deleteBtn?.addEventListener('click', async () => {
+    if (!selectedClient?.id) return
+    const name = selectedClient.full_name || 'este cliente'
+    if (!confirm(`Eliminar ${name}?`)) return
+    try {
+      const res = await fetch(api(`/clientes/${selectedClient.id}`), { method: 'DELETE' })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || `Error ${res.status}`)
+      showDetail(null)
+      await loadClients()
+      setText(hintEl, 'Cliente eliminado.', '')
+    } catch (err) {
+      alert(err?.message || 'No se pudo eliminar')
     }
   })
 

@@ -4,7 +4,7 @@ Panel Flask con:
 - Gestor de archivos: sube a Azure Blob (prefijo `file/...`), guarda metadatos en PostgreSQL, genera SAS y envía a n8n.
 - Explorador de carpetas (reflejo de Blob): navegación por subcarpetas y drag & drop.
 - Agenda: CRUD de citas con vista mensual y APIs para bots/servicios.
-- Clientes: gestiona contactos (cedula/pasaporte), notas y citas asociadas (opcional).
+- Clientes: gestiona contactos (cedula/pasaporte), notas, lista negra y citas asociadas (opcional); en el panel se agenda con inicio + duracion (15/30/60/90/120).
 
 ## Archivos clave
 - `app.py`: arranque de Flask (usa `vetflow.create_app()`).
@@ -62,7 +62,7 @@ Abre `http://localhost:5000`.
 ## Flujo de uso (UI)
 - Archivos: explora carpetas como en Blob; navega con las filas de carpeta o `[ .. ]`. El drag & drop sube al folder actual. Miniaturas usan SAS temporal. “Enviar a bot” cambia de color según el `status`. El botón “Solicitar borrado” marca el archivo como `deleting` (badge naranja) y dispara el webhook de borrado.
 - Calendario: crea/edita/elimina citas; vista mensual con eventos por día y modal de detalle.
-- Gestionar clientes: crea/busca/edita clientes (identificación obligatoria), agrega notas y agenda citas; desde Calendario puedes asociar una cita a un cliente (opcional).
+- Gestionar clientes: crea/busca/edita clientes (identificacion obligatoria), agrega notas, marca lista negra, elimina clientes y agenda citas con inicio + duracion (15/30/60/90/120); desde Calendario puedes asociar una cita a un cliente (opcional).
 
 ## API JSON
 Fechas en ISO8601, ejemplo `2025-01-15T10:00:00Z`.
@@ -121,6 +121,7 @@ erDiagram
         string email
         string address
         string notes
+        boolean blacklisted
         timestamptz created_at
         timestamptz updated_at
     }
@@ -203,12 +204,14 @@ erDiagram
   - `id_number`: número/documento
 - Duplicados: si intentas crear/editar un cliente con la misma identificación, la API responde `409` con:
   - `{ "error": "cliente_ya_existe", "existing_client_id": <id> }`
+- Campo opcional: `blacklisted` (boolean) para marcar lista negra.
 
 **Endpoints (multi-tenant)**
 - Listar/buscar: `GET /w/<schema_name>/api/clientes?q=<texto>&limit=200`
 - Crear: `POST /w/<schema_name>/api/clientes`
 - Obtener: `GET /w/<schema_name>/api/clientes/<client_id>`
 - Actualizar: `PUT /w/<schema_name>/api/clientes/<client_id>`
+- Eliminar: `DELETE /w/<schema_name>/api/clientes/<client_id>` (deja citas con `client_id` en NULL)
 - Agregar nota: `POST /w/<schema_name>/api/clientes/<client_id>/notas`
 - Crear cita asociada: `POST /w/<schema_name>/api/clientes/<client_id>/citas` (crea en `appointments` con `client_id`)
 
@@ -229,7 +232,7 @@ curl -X POST "http://localhost:5000/w/demo-vetflow/api/clientes" \
 ```
 
 **UI**
-- Nueva pestaña **Gestionar clientes**: CRUD, notas y citas por cliente.
+- Nueva pestaña **Gestionar clientes**: CRUD, notas, lista negra, eliminar clientes y agenda con duracion (15/30/60/90/120).
 - En el modal de crear/editar cita del **Calendario** existe el selector **Cliente (opcional)** que guarda `appointments.client_id`.
 
 ### UI Calendario (FullCalendar)
@@ -470,7 +473,7 @@ Para llevar la imagen a un registro (ej. Docker Hub, Azure CR, AWS ECR):
 1. **Construir la imagen**:
    ```bash
    # Sintaxis: docker build -t <usuario>/<nombre-imagen>:<tag> .
-   docker build -t erifcamp/flow-panel:v1.4.0 .
+   docker build -t erifcamp/flow-panel:v1.4.2 .
    ```
 
 2. **Login en el registro**:
@@ -480,7 +483,7 @@ Para llevar la imagen a un registro (ej. Docker Hub, Azure CR, AWS ECR):
 
 3. **Subir la imagen (Push)**:
    ```bash
-   docker push erifcamp/flow-panel:v1.4.0 
+   docker push erifcamp/flow-panel:v1.4.2
    ```
 
 ### Variables de Entorno en Docker

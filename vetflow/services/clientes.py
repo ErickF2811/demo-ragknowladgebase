@@ -46,6 +46,7 @@ def _ensure_clients_tables(conn) -> None:
             email TEXT,
             address TEXT,
             notes TEXT,
+            blacklisted BOOLEAN DEFAULT FALSE,
             created_at TIMESTAMPTZ DEFAULT NOW(),
             updated_at TIMESTAMPTZ DEFAULT NOW()
         )
@@ -53,6 +54,7 @@ def _ensure_clients_tables(conn) -> None:
     )
     conn.execute("ALTER TABLE IF EXISTS clients ADD COLUMN IF NOT EXISTS id_type TEXT")
     conn.execute("ALTER TABLE IF EXISTS clients ADD COLUMN IF NOT EXISTS id_number TEXT")
+    conn.execute("ALTER TABLE IF EXISTS clients ADD COLUMN IF NOT EXISTS blacklisted BOOLEAN DEFAULT FALSE")
     conn.execute(
         """
         DO $$
@@ -92,6 +94,15 @@ def _find_existing_client_id(conn, id_type: str, id_number: str, exclude_client_
     return row["id"] if row else None
 
 
+def _parse_blacklisted(raw: Any) -> bool:
+    if raw is None:
+        return False
+    if isinstance(raw, bool):
+        return raw
+    value = str(raw).strip().lower()
+    return value in ("1", "true", "yes", "on", "si")
+
+
 def list_clients(query: Optional[str] = None, limit: int = 200) -> List[Dict[str, Any]]:
     q = (query or "").strip()
     limit = max(1, min(int(limit or 200), 500))
@@ -101,7 +112,7 @@ def list_clients(query: Optional[str] = None, limit: int = 200) -> List[Dict[str
             like = f"%{q.lower()}%"
             rows = conn.execute(
                 """
-                SELECT id, full_name, id_type, id_number, phone, email, address, notes, created_at, updated_at
+                SELECT id, full_name, id_type, id_number, phone, email, address, notes, blacklisted, created_at, updated_at
                 FROM clients
                 WHERE lower(full_name) LIKE %s
                    OR lower(coalesce(phone, '')) LIKE %s
@@ -115,7 +126,7 @@ def list_clients(query: Optional[str] = None, limit: int = 200) -> List[Dict[str
         else:
             rows = conn.execute(
                 """
-                SELECT id, full_name, id_type, id_number, phone, email, address, notes, created_at, updated_at
+                SELECT id, full_name, id_type, id_number, phone, email, address, notes, blacklisted, created_at, updated_at
                 FROM clients
                 ORDER BY updated_at DESC, created_at DESC
                 LIMIT %s
@@ -130,7 +141,7 @@ def get_client(client_id: int) -> Dict[str, Any]:
         _ensure_clients_tables(conn)
         row = conn.execute(
             """
-            SELECT id, full_name, id_type, id_number, phone, email, address, notes, created_at, updated_at
+            SELECT id, full_name, id_type, id_number, phone, email, address, notes, blacklisted, created_at, updated_at
             FROM clients
             WHERE id=%s
             """,
@@ -182,6 +193,7 @@ def create_client(payload: Dict[str, Any]) -> Dict[str, Any]:
     email = (payload.get("email") or "").strip() or None
     address = (payload.get("address") or "").strip() or None
     notes = (payload.get("notes") or "").strip() or None
+    blacklisted = _parse_blacklisted(payload.get("blacklisted"))
     with get_db() as conn:
         _ensure_clients_tables(conn)
         existing_id = _find_existing_client_id(conn, id_type, id_number)
@@ -189,11 +201,11 @@ def create_client(payload: Dict[str, Any]) -> Dict[str, Any]:
             raise DuplicateClientError(existing_id)
         row = conn.execute(
             """
-            INSERT INTO clients (full_name, id_type, id_number, phone, email, address, notes)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-            RETURNING id, full_name, id_type, id_number, phone, email, address, notes, created_at, updated_at
+            INSERT INTO clients (full_name, id_type, id_number, phone, email, address, notes, blacklisted)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING id, full_name, id_type, id_number, phone, email, address, notes, blacklisted, created_at, updated_at
             """,
-            (full_name, id_type, id_number, phone, email, address, notes),
+            (full_name, id_type, id_number, phone, email, address, notes, blacklisted),
         ).fetchone()
     return dict(row)
 
@@ -203,7 +215,7 @@ def update_client(client_id: int, payload: Dict[str, Any]) -> Dict[str, Any]:
         _ensure_clients_tables(conn)
         current = conn.execute(
             """
-            SELECT id, full_name, id_type, id_number, phone, email, address, notes, created_at, updated_at
+            SELECT id, full_name, id_type, id_number, phone, email, address, notes, blacklisted, created_at, updated_at
             FROM clients
             WHERE id=%s
             """,
@@ -255,6 +267,9 @@ def update_client(client_id: int, payload: Dict[str, Any]) -> Dict[str, Any]:
         if "id_number" in payload:
             fields.append("id_number=%s")
             values.append(effective_id_number)
+        if "blacklisted" in payload:
+            fields.append("blacklisted=%s")
+            values.append(_parse_blacklisted(payload.get("blacklisted")))
 
         if not fields:
             raise ValueError("sin_cambios")
@@ -265,13 +280,26 @@ def update_client(client_id: int, payload: Dict[str, Any]) -> Dict[str, Any]:
             UPDATE clients
             SET {', '.join(fields)}, updated_at=NOW()
             WHERE id=%s
-            RETURNING id, full_name, id_type, id_number, phone, email, address, notes, created_at, updated_at
+            RETURNING id, full_name, id_type, id_number, phone, email, address, notes, blacklisted, created_at, updated_at
             """,
             tuple(values),
         ).fetchone()
         if not row:
             raise LookupError("not_found")
     return dict(row)
+
+
+def delete_client(client_id: int) -> None:
+    with get_db() as conn:
+        _ensure_clients_tables(conn)
+        exists = conn.execute("SELECT 1 FROM clients WHERE id=%s", (client_id,)).fetchone()
+        if not exists:
+            raise LookupError("not_found")
+        try:
+            conn.execute("UPDATE appointments SET client_id=NULL WHERE client_id=%s", (client_id,))
+        except errors.UndefinedColumn:
+            pass
+        conn.execute("DELETE FROM clients WHERE id=%s", (client_id,))
 
 
 def add_note(client_id: int, body: str) -> Dict[str, Any]:

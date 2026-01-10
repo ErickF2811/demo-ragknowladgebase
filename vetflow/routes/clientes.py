@@ -89,6 +89,20 @@ def api_clientes_update(slug: str, client_id: int):
         return jsonify({"error": f"error_interno: {ex}"}), 500
 
 
+@clientes_bp.route("/w/<slug>/api/clientes/<int:client_id>", methods=["DELETE"])
+def api_clientes_delete(slug: str, client_id: int):
+    if not ensure_workspace_from_slug(slug):
+        return jsonify({"error": "workspace_not_found"}), 404
+    try:
+        clientes_service.delete_client(client_id)
+        return jsonify({"ok": True})
+    except LookupError:
+        return jsonify({"error": "not_found"}), 404
+    except Exception as ex:
+        logger.exception("Error eliminando cliente slug=%s id=%s", slug, client_id)
+        return jsonify({"error": f"error_interno: {ex}"}), 500
+
+
 @clientes_bp.route("/w/<slug>/api/clientes/<int:client_id>/notas", methods=["POST"])
 def api_clientes_add_note(slug: str, client_id: int):
     if not ensure_workspace_from_slug(slug):
