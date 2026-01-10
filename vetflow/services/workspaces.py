@@ -305,12 +305,60 @@ def get_member_role(workspace_id: str, email: str) -> Optional[str]:
     return row["role"] if row else None
 
 
+
+
+def list_members(workspace_id: str) -> List[Dict]:
+    """
+    Devuelve miembros de un workspace con rol y datos de usuario.
+    """
+    ensure_core_bootstrap()
+    with get_db(schema=config.CORE_SCHEMA) as conn:
+        rows = conn.execute(
+            """
+            SELECT
+                wm.workspace_id::text,
+                wm.role,
+                wm.joined_at,
+                u.id::text AS user_id,
+                u.email,
+                u.display_name,
+                u.avatar_url
+            FROM workspace_members wm
+            JOIN app_users u ON u.id = wm.user_id
+            WHERE wm.workspace_id = %s
+            ORDER BY wm.role = 'owner' DESC, wm.role = 'admin' DESC, u.email ASC
+            """,
+            (workspace_id,),
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def get_member_role(workspace_id: str, email: str) -> Optional[str]:
+    if not email:
+        return None
+    ensure_core_bootstrap()
+    normalized = _normalize_email(email)
+    with get_db(schema=config.CORE_SCHEMA) as conn:
+        row = conn.execute(
+            """
+            SELECT wm.role
+            FROM workspace_members wm
+            JOIN app_users u ON u.id = wm.user_id
+            WHERE wm.workspace_id = %s AND u.email = %s
+            """,
+            (workspace_id, normalized),
+        ).fetchone()
+    return row["role"] if row else None
+
+
 def create_workspace(
     name: str,
     owner_email: str,
     owner_name: Optional[str] = None,
     description: Optional[str] = None,
     slug_hint: Optional[str] = None,
+    theme_color: Optional[str] = None,
+    icon_url: Optional[str] = None,
 ) -> Dict:
     if not name:
         raise ValueError("Nombre requerido")
@@ -338,8 +386,8 @@ def create_workspace(
         schema_name = _generate_schema_name(slug, conn)
         workspace = conn.execute(
             """
-            INSERT INTO workspaces (name, slug, schema_name, description, owner_id)
-            VALUES (%s, %s, %s, %s, %s)
+            INSERT INTO workspaces (name, slug, schema_name, description, owner_id, theme_color, icon_url)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
             RETURNING
                 id::text,
                 name,
@@ -352,7 +400,7 @@ def create_workspace(
                 created_at,
                 updated_at
             """,
-            (name, slug, schema_name, description, owner["id"]),
+            (name, slug, schema_name, description, owner["id"], theme_color or '#6c47ff', icon_url),
         ).fetchone()
         conn.execute(
             """
@@ -379,6 +427,7 @@ def create_workspace(
                 "slug": result.get("slug"),
                 "schema_name": result.get("schema_name"),
                 "description": result.get("description"),
+                "theme_color": result.get("theme_color"),
                 "owner_email": result.get("owner_email"),
                 "owner_name": result.get("owner_name"),
                 "created_at": _json_safe(result.get("created_at")),
@@ -398,6 +447,72 @@ def create_workspace(
         except Exception as ex:
             logger.warning("No se pudo notificar N8N_NEW_WORKSPACE_WEBHOOK_URL=%s: %s", webhook_url, ex)
     return result
+
+
+def update_workspace(
+    workspace_id: str,
+    name: Optional[str] = None,
+    description: Optional[str] = None,
+    theme_color: Optional[str] = None,
+    icon_url: Optional[str] = None,
+) -> Dict:
+    """
+    Actualiza los datos basicos de un workspace.
+    """
+    ensure_core_bootstrap()
+    with get_db(schema=config.CORE_SCHEMA) as conn:
+        # Build update query dynamically
+        fields = []
+        values = []
+        if name is not None:
+            fields.append("name = %s")
+            values.append(name.strip())
+        if description is not None:
+            fields.append("description = %s")
+            values.append(description.strip())
+        if theme_color is not None:
+            fields.append("theme_color = %s")
+            values.append(theme_color.strip())
+        if icon_url is not None:
+            fields.append("icon_url = %s")
+            values.append(icon_url.strip())
+        
+        if not fields:
+            # Nothing to update, return current state
+            return get_workspace(workspace_id) or {}
+
+        values.append(workspace_id)
+        query = f"""
+            UPDATE workspaces
+            SET {', '.join(fields)}, updated_at = NOW()
+            WHERE id = %s
+            RETURNING
+                id::text,
+                name,
+                slug,
+                schema_name,
+                description,
+                theme_color,
+                icon_url,
+                owner_id,
+                created_at,
+                updated_at
+        """
+        row = conn.execute(query, tuple(values)).fetchone()
+        if not row:
+            raise LookupError("workspace_not_found")
+        
+        updated = dict(row)
+        # Fetch stats to keep return shape consistent
+        updated.update(_workspace_stats(updated["schema_name"]))
+        
+        # Get owner info
+        owner_row = conn.execute("SELECT email, display_name FROM app_users WHERE id=%s", (updated["owner_id"],)).fetchone()
+        if owner_row:
+            updated["owner_email"] = owner_row["email"]
+            updated["owner_name"] = owner_row["display_name"]
+
+    return updated
 
 
 def create_invite(
@@ -677,3 +792,36 @@ def remove_member(workspace_id: str, target_email: str, acting_email: str) -> Di
         )
 
     return dict(target_row)
+
+
+def update_workspace(workspace_id: str, name: str = None, description: str = None, theme_color: str = None, icon_url: str = None):
+    """
+    Actualiza detalles del workspace.
+    """
+    ensure_core_bootstrap()
+    with get_db(schema=config.CORE_SCHEMA) as conn:
+        # Update dynamically
+        updates = []
+        params = []
+        if name:
+            updates.append("name = %s")
+            params.append(name)
+        if description is not None:
+            updates.append("description = %s")
+            params.append(description)
+        if theme_color:
+            updates.append("theme_color = %s")
+            params.append(theme_color)
+        if icon_url:
+            updates.append("icon_url = %s")
+            params.append(icon_url)
+
+        if not updates:
+            return None
+
+        params.append(workspace_id)
+        workspace = conn.execute(
+            f"UPDATE workspaces SET {', '.join(updates)}, updated_at = NOW() WHERE id = %s RETURNING *",
+            tuple(params)
+        ).fetchone()
+        return dict(workspace) if workspace else None

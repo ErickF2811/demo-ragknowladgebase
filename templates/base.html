@@ -81,56 +81,53 @@
     .panel-container {
       width: 100%;
       margin: 0 auto;
-      padding-left: clamp(1rem, 2vw, 2.75rem);
-      padding-right: clamp(1rem, 2vw, 2.75rem);
       max-width: 100%;
     }
 
     .vetflow-nav {
       position: sticky;
       top: 0;
-      z-index: 100;
+      z-index: 1000;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 1rem 2.5rem;
-      background: var(--vet-bg-surface-translucent);
-      border-bottom: 1px solid var(--vet-border-light);
-      box-shadow: var(--vet-shadow-sm);
+      padding: 1rem 1.5rem;
+      background: var(--vet-glass-bg);
       backdrop-filter: blur(12px);
-    }
-
-    /* Global Dark Mode Overrides for Bootstrap Components */
-    .dropdown-menu {
-      background-color: var(--vet-bg-surface);
-      border-color: var(--vet-border-light);
-      box-shadow: var(--vet-shadow-md);
-    }
-
-    .dropdown-item {
-      color: var(--vet-text-main);
-    }
-
-    .dropdown-item:hover,
-    .dropdown-item:focus {
-      background-color: var(--vet-bg-subtle);
-      color: var(--vet-primary);
-    }
-
-    .card {
-      background-color: var(--vet-bg-surface);
-      border-color: var(--vet-border-light);
-      color: var(--vet-text-main);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--vet-glass-border);
+      box-shadow: var(--vet-shadow-sm);
     }
 
     .vetflow-brand {
       text-transform: uppercase;
       font-weight: 700;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.06em;
+      font-family: 'Lexend', sans-serif;
       display: flex;
       align-items: center;
-      gap: 0.6rem;
+      gap: 0.7rem;
       color: var(--vet-primary-strong);
+      min-width: 0;
+    }
+
+    .vetflow-brand-logo {
+      width: 34px;
+      height: 34px;
+      border-radius: 12px;
+      background: var(--vet-bg-subtle);
+      border: 1px solid var(--vet-border-light);
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .vetflow-brand-logo img {
+      width: 70%;
+      height: 70%;
+      object-fit: contain;
+      display: block;
     }
 
     .vetflow-brand .dot {
@@ -139,6 +136,13 @@
       border-radius: 50%;
       background: var(--vet-primary);
       box-shadow: 0 0 0 6px var(--vet-border-light);
+    }
+
+    .vetflow-brand-name {
+      max-width: clamp(160px, 20vw, 320px);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .vetflow-session {
@@ -164,6 +168,27 @@
     .theme-toggle-btn:hover {
       background: var(--vet-bg-subtle);
       color: var(--vet-primary);
+    }
+
+    .hamburger-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border: 1px solid var(--vet-border-light);
+      background: var(--vet-bg-surface);
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 1.25rem;
+      color: var(--vet-primary);
+      transition: all 0.2s ease;
+      box-shadow: var(--vet-shadow-sm);
+    }
+
+    .hamburger-toggle:hover {
+      background: var(--vet-bg-subtle);
+      transform: scale(1.05);
     }
 
     #clerk-user-name {
@@ -419,9 +444,9 @@
       color: var(--vet-primary-strong);
     }
 
-    /* Oculta el label de nombre del dia en vistas semana/dia */
+    /* Mostrar labels de nombre del dia */
     .timeline-day-label {
-      display: none;
+      display: inline-block;
     }
 
     .timeline-scroll {
@@ -747,31 +772,30 @@
     }
 
     .text-note-card {
-      background: rgba(18, 23, 38, 0.6);
+      background: var(--vet-bg-subtle);
       border: 1px solid var(--vet-border-light);
-      border-radius: 18px;
-      padding: 1rem 1.1rem;
-    }
-
-    .text-note-card textarea {
-      min-height: 120px;
-      resize: vertical;
+      border-radius: 20px;
+      padding: 1.25rem;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
     }
 
     .text-note-form .form-control {
-      background: rgba(15, 23, 42, 0.45);
-      border-color: rgba(148, 163, 184, 0.3);
+      background: var(--vet-bg-surface);
+      border: 1px solid var(--vet-border);
       color: var(--vet-text-main);
+      font-size: 0.9rem;
+      border-radius: 12px;
     }
 
     .text-note-form .form-control::placeholder {
-      color: rgba(148, 163, 184, 0.75);
+      color: var(--vet-text-muted);
+      opacity: 0.7;
     }
 
     .text-note-form .form-control:focus {
-      background: rgba(15, 23, 42, 0.6);
-      border-color: rgba(124, 58, 237, 0.55);
-      box-shadow: 0 0 0 0.2rem rgba(124, 58, 237, 0.15);
+      background: var(--vet-bg-surface);
+      border-color: var(--vet-primary);
+      box-shadow: 0 0 0 3px var(--vet-primary-subtle);
     }
 
     .text-note-card .badge {
@@ -1080,10 +1104,18 @@
   <div class="app-shell">
     <nav class="vetflow-nav">
       <div class="d-flex align-items-center gap-3">
-        <button class="hamburger-toggle" type="button" id="toggleSideNav">&#9776;</button>
+        <button class="hamburger-toggle" type="button" id="toggleSideNav" aria-label="Abrir menu" aria-expanded="false"
+          aria-controls="sideNav">&#9776;</button>
         <div class="vetflow-brand">
-          <span class="dot"></span>
-          <span>Vetflow</span>
+          <span class="vetflow-brand-logo">
+            {% if current_workspace and current_workspace.icon_url %}
+            <img src="{{ current_workspace.icon_url }}" alt="Logo Workspace" class="vetflow-brand-img"
+              onerror="this.onerror=null; this.src='{{ url_for('static', filename='img/control-vet-logo.png') }}'; this.classList.add('logo-fallback');">
+            {% else %}
+            <span class="dot"></span>
+            {% endif %}
+          </span>
+          <span class="vetflow-brand-name">{{ current_workspace.name if current_workspace else 'VETFLOW' }}</span>
         </div>
       </div>
       <div class="vetflow-session">

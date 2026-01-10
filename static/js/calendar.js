@@ -1889,33 +1889,74 @@
     });
   });
 
+  // Replaced static listener with delegation to handle potential DOM updates
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('#bulkDeleteBtn');
+    if (!btn) return;
+
+    // Prevent default just in case
+    e.preventDefault();
+
+    const checks = Array.from(document.querySelectorAll(".appointment-check:checked"));
+    const ids = checks.map((ch) => ch.value);
+
+    if (!ids.length) return;
+
+    if (!confirm(`¿Estás seguro de que quieres eliminar ${ids.length} cita(s)?`)) return;
+
+    // UI Feedback
+    const originalContent = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>`;
+
+    let deletedCount = 0;
+    try {
+      for (const id of ids) {
+        const ok = await deleteEvent(id);
+        if (ok) deletedCount++;
+      }
+    } catch (err) {
+      console.error("Error en borrado masivo", err);
+    } finally {
+      // Restore UI
+      btn.innerHTML = originalContent;
+      updateBulkState(); // Re-evaluates disabled state based on remaining checks (if any)
+
+      if (deletedCount > 0) {
+        emitCalendarChanged();
+        renderCalendar();
+      }
+
+      if (deletedCount < ids.length) {
+        alert(`Se eliminaron ${deletedCount} de ${ids.length} citas.`);
+      }
+    }
+  });
+
+  // Refreshed updateBulkState to query fresh DOM elements
   function updateBulkState() {
-    if (!bulkDeleteBtn) return;
-    const anyChecked = Array.from(document.querySelectorAll(".appointment-check")).some((ch) => ch.checked);
-    bulkDeleteBtn.disabled = !anyChecked;
+    const btn = document.getElementById("bulkDeleteBtn");
+    if (!btn) return;
+    const checks = Array.from(document.querySelectorAll(".appointment-check"));
+    const anyChecked = checks.some((ch) => ch.checked);
+    btn.disabled = !anyChecked;
+
     if (selectAllAppointments) {
-      const checks = Array.from(document.querySelectorAll(".appointment-check"));
-      const allChecked = checks.length && checks.every((ch) => ch.checked);
+      const allChecked = checks.length > 0 && checks.every((ch) => ch.checked);
       selectAllAppointments.checked = allChecked;
       selectAllAppointments.indeterminate = anyChecked && !allChecked;
     }
   }
-  selectAllAppointments?.addEventListener("change", () => {
-    const val = selectAllAppointments.checked;
-    document.querySelectorAll(".appointment-check").forEach((ch) => (ch.checked = val));
-    updateBulkState();
-  });
-  bulkDeleteBtn?.addEventListener("click", async () => {
-    const ids = Array.from(document.querySelectorAll(".appointment-check")).filter((ch) => ch.checked).map((ch) => ch.value);
-    if (!ids.length) return;
-    if (!confirm(`Eliminar ${ids.length} cita(s)?`)) return;
-    for (const id of ids) {
-      const ok = await deleteEvent(id);
-      if (!ok) alert(`No se pudo eliminar cita ${id}`);
+
+  // Robust delegation for all checkbox changes (individual and select-all)
+  document.addEventListener('change', (e) => {
+    if (e.target.matches('.appointment-check')) {
+      updateBulkState();
+    } else if (e.target && e.target.id === 'selectAllAppointments') {
+      const val = e.target.checked;
+      document.querySelectorAll(".appointment-check").forEach((ch) => (ch.checked = val));
+      updateBulkState();
     }
-    updateBulkState();
-    updateBulkState();
-    renderCalendar();
   });
 
   // Expose for inline usage

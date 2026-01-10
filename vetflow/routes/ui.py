@@ -1,4 +1,6 @@
 from typing import Optional
+import uuid
+from urllib.parse import urlparse
 
 from flask import (
     Blueprint,
@@ -21,10 +23,12 @@ from ..auth import (
     resolve_user_from_token,
     require_authenticated_request,
 )
+from ..storage import upload_blob, generate_sas_url
 from ..services.calendar import get_status_choices, list_appointments, list_upcoming_appointments, STATUS_LABELS
 from ..services.files import list_files
 from ..services.workspaces import (
     create_workspace,
+    update_workspace,
     ensure_default_workspace_for_user,
     get_workspace_by_key,
     list_workspaces,
@@ -35,6 +39,7 @@ from ..services.workspaces import (
     accept_invite,
     remove_member,
 )
+
 
 ui_bp = Blueprint("ui", __name__)
 
@@ -53,6 +58,31 @@ def _select_workspace_by_slug(workspaces, slug):
             if ws.get("schema_name") == slug or ws.get("slug") == slug:
                 return ws
     return None
+
+
+def _resolve_workspace_icon_url(icon_url: Optional[str]) -> Optional[str]:
+    if not icon_url:
+        return None
+    try:
+        parsed = urlparse(icon_url)
+    except Exception:
+        return icon_url
+    if parsed.query:
+        return icon_url
+    container = (config.AZURE_BLOB_CONTAINER or "").strip()
+    if not (parsed.scheme and parsed.netloc and container):
+        return icon_url
+    path = parsed.path.lstrip("/")
+    prefix = f"{container}/"
+    if not path.startswith(prefix):
+        return icon_url
+    blob_path = path[len(prefix) :]
+    if not blob_path:
+        return icon_url
+    try:
+        return generate_sas_url(blob_path)
+    except Exception:
+        return icon_url
 
 
 def set_workspace_context(workspace):
@@ -143,6 +173,10 @@ def _render_dashboard(workspace_slug: Optional[str] = None):
     members = []
     membership_role = None
     if current_workspace:
+        if current_workspace.get("icon_url"):
+            current_workspace["icon_url"] = _resolve_workspace_icon_url(
+                current_workspace.get("icon_url")
+            )
         set_workspace_context(current_workspace)
         files = list_files()
         appointments = list_appointments()
@@ -201,6 +235,7 @@ def create_workspace_route():
     owner_name = (request.form.get("owner_name") or "").strip() or None
     description = (request.form.get("workspace_description") or "").strip() or None
     slug_hint = (request.form.get("workspace_slug") or "").strip() or None
+    theme_color = (request.form.get("theme_color") or "").strip() or "#6c47ff"
 
     if is_auth_required():
         session_email, session_name = _resolve_current_user()
@@ -216,15 +251,35 @@ def create_workspace_route():
         flash("Nombre y correo son obligatorios", "danger")
         return redirect(url_for("ui.index"))
 
+    icon_url = None
+    if "workspace_icon" in request.files:
+        file = request.files["workspace_icon"]
+        if file and file.filename:
+            try:
+                # Generate unique name: workspaces/uuid-filename
+                blob_name = f"workspaces/{uuid.uuid4().hex[:8]}-{file.filename}"
+                icon_url = upload_blob(blob_name, file.stream, file.mimetype)
+            except Exception as e:
+                flash(f"Error subiendo icono: {e}", "warning")
+                # Continue without icon
+
     try:
-        workspace = create_workspace(name, owner_email, owner_name, description, slug_hint=slug_hint)
+        workspace = create_workspace(
+            name, 
+            owner_email, 
+            owner_name, 
+            description, 
+            slug_hint=slug_hint, 
+            theme_color=theme_color, 
+            icon_url=icon_url
+        )
         flash(f"Workspace {workspace['name']} creado", "success")
         return redirect(url_for("ui.workspace_by_slug", slug=workspace["slug"]))
     except ValueError as ve:
         flash(str(ve), "danger")
         return redirect(url_for("ui.index"))
     except Exception as ex:
-        flash(f"No se pudo crear el workspace: {ex}", "danger")
+        flash(f"No se pudieron crear el workspace: {ex}", "danger")
         return redirect(url_for("ui.index"))
 
 
@@ -266,6 +321,43 @@ def delete_workspace_route(workspace_id: str = None):
 
     flash(f"Workspace {deleted.get('name') or deleted.get('slug')} eliminado", "success")
     return redirect(url_for("ui.index"))
+
+
+@ui_bp.route("/workspaces/<workspace_id>/update", methods=["POST"])
+def update_workspace_route(workspace_id: str):
+    try:
+        require_authenticated_request()
+    except AuthError as ex:
+        flash(str(ex), "danger")
+        return redirect(url_for("ui.index"))
+
+    user_email, _ = _resolve_current_user()
+    role = get_member_role(workspace_id, user_email) if user_email else None
+    if role != "owner":
+        flash("Solo el owner puede editar este workspace.", "danger")
+        return redirect(url_for("ui.index"))
+
+    name = request.form.get("workspace_name")
+    description = request.form.get("workspace_description")
+    theme_color = request.form.get("theme_color")
+
+    icon_url = None
+    if "workspace_icon" in request.files:
+        file = request.files["workspace_icon"]
+        if file and file.filename:
+            try:
+                blob_name = f"workspaces/{uuid.uuid4().hex[:8]}-{file.filename}"
+                icon_url = upload_blob(blob_name, file.stream, file.mimetype)
+            except Exception as e:
+                flash(f"Error subiendo icono: {e}", "warning")
+
+    try:
+        update_workspace(workspace_id, name=name, description=description, theme_color=theme_color, icon_url=icon_url)
+        flash("Workspace actualizado", "success")
+    except Exception as ex:
+        flash(f"No se pudo actualizar: {ex}", "danger")
+
+    return redirect(request.referrer or url_for("ui.index"))
 
 
 @ui_bp.route("/w/<slug>/api/invites", methods=["POST"])
