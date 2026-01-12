@@ -9,7 +9,7 @@ import requests
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
-from flask import request, session
+from flask import request, session, g
 
 from .config import config
 
@@ -27,7 +27,9 @@ class AuthError(Exception):
 
 
 def is_auth_required() -> bool:
-    return bool(getattr(config, "CLERK_AUTH_REQUIRED", False) and (config.CLERK_PUBLISHABLE_KEY or "").strip())
+    if getattr(config, "CLERK_AUTH_REQUIRED", False):
+        return True
+    return bool((getattr(config, "VETFLOW_API_KEY", "") or "").strip())
 
 
 def is_service_api_key_valid() -> bool:
@@ -50,6 +52,30 @@ def is_service_api_key_valid() -> bool:
     return False
 
 
+def _bearer_token_from_header() -> Optional[str]:
+    try:
+        auth = request.headers.get("Authorization") or ""
+    except RuntimeError:
+        return None
+    if isinstance(auth, str) and auth.lower().startswith("bearer "):
+        token = auth.split(" ", 1)[1].strip()
+        return token or None
+    return None
+
+
+def resolve_bearer_identity() -> Optional[Dict[str, Any]]:
+    cached = getattr(g, "_bearer_identity", None)
+    if cached is not None:
+        return cached
+    token = _bearer_token_from_header()
+    if not token:
+        g._bearer_identity = None
+        return None
+    identity = resolve_user_from_token(token)
+    g._bearer_identity = identity
+    return identity
+
+
 def has_user_session() -> bool:
     try:
         return bool(session.get("current_user_email"))
@@ -59,6 +85,9 @@ def has_user_session() -> bool:
 
 def require_authenticated_request() -> None:
     if is_service_api_key_valid():
+        return
+    identity = resolve_bearer_identity()
+    if identity:
         return
     if not is_auth_required():
         return

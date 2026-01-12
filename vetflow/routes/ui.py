@@ -20,6 +20,7 @@ from ..auth import (
     AuthError,
     is_auth_required,
     is_service_api_key_valid,
+    resolve_bearer_identity,
     resolve_user_from_token,
     require_authenticated_request,
 )
@@ -119,7 +120,15 @@ def _resolve_current_user():
     email = session.get("current_user_email")
     name = session.get("current_user_name")
     if getattr(config, "CLERK_AUTH_REQUIRED", False):
-        return email, name
+        if email:
+            return email, name
+        try:
+            identity = resolve_bearer_identity()
+        except AuthError:
+            return None, None
+        if identity:
+            return identity.get("email"), identity.get("name")
+        return None, None
     header_email = request.headers.get("X-User-Email")
     header_name = request.headers.get("X-User-Name")
     qs_email = request.args.get("email")
@@ -221,6 +230,81 @@ def workspace_by_slug(slug: str):
     if canonical and slug != canonical:
         return redirect(url_for("ui.workspace_by_slug", slug=canonical))
     return _render_dashboard(workspace_slug=slug)
+
+
+@ui_bp.route("/w/<slug>/api/workspace", methods=["GET"])
+def api_workspace(slug: str):
+    try:
+        require_authenticated_request()
+    except AuthError as ex:
+        return jsonify({"error": ex.code, "message": str(ex)}), ex.status_code
+
+    workspace = ensure_workspace_from_slug(slug)
+    if not workspace:
+        return jsonify({"error": "workspace_not_found"}), 404
+    if workspace.get("icon_url"):
+        workspace["icon_url"] = _resolve_workspace_icon_url(workspace.get("icon_url"))
+    return jsonify({"workspace": workspace})
+
+
+@ui_bp.route("/api/workspaces", methods=["GET"])
+def api_workspaces_root():
+    try:
+        require_authenticated_request()
+    except AuthError as ex:
+        return jsonify({"error": ex.code, "message": str(ex)}), ex.status_code
+
+    user_email, user_name = _resolve_current_user()
+    workspaces = []
+    if user_email:
+        workspaces = list_workspaces(include_stats=True, user_email=user_email, user_name=user_name)
+        if not workspaces:
+            target_workspace = ensure_default_workspace_for_user(user_email, user_name)
+            if target_workspace:
+                workspaces = list_workspaces(
+                    include_stats=True,
+                    user_email=user_email,
+                    user_name=user_name,
+                )
+                if not workspaces:
+                    workspaces = [target_workspace]
+    elif is_service_api_key_valid():
+        workspaces = list_workspaces(include_stats=True)
+
+    for workspace in workspaces:
+        if workspace.get("icon_url"):
+            workspace["icon_url"] = _resolve_workspace_icon_url(workspace.get("icon_url"))
+
+    return jsonify({"workspaces": workspaces})
+
+
+@ui_bp.route("/w/<slug>/api/workspaces", methods=["GET"])
+def api_workspaces(slug: str):
+    try:
+        require_authenticated_request()
+    except AuthError as ex:
+        return jsonify({"error": ex.code, "message": str(ex)}), ex.status_code
+
+    current_workspace = ensure_workspace_from_slug(slug)
+    if not current_workspace:
+        return jsonify({"error": "workspace_not_found"}), 404
+
+    user_email, user_name = _resolve_current_user()
+    if user_email:
+        workspaces = list_workspaces(include_stats=True, user_email=user_email, user_name=user_name)
+    elif is_service_api_key_valid():
+        workspaces = list_workspaces(include_stats=True)
+    else:
+        workspaces = []
+
+    for workspace in workspaces:
+        if workspace.get("icon_url"):
+            workspace["icon_url"] = _resolve_workspace_icon_url(workspace.get("icon_url"))
+
+    if current_workspace.get("icon_url"):
+        current_workspace["icon_url"] = _resolve_workspace_icon_url(current_workspace.get("icon_url"))
+
+    return jsonify({"workspaces": workspaces, "current_workspace": current_workspace})
 
 
 @ui_bp.route("/workspaces", methods=["POST"])

@@ -5,6 +5,7 @@ from ..auth import AuthError, require_authenticated_request
 from ..services.files import (
     create_file,
     delete_file,
+    list_files,
     notify_ingest_webhook,
     sas_for_file,
     send_to_n8n,
@@ -29,6 +30,20 @@ def _auth_guard():
             flash(str(ex), "danger")
             return redirect(url_for("ui.index"))
         return jsonify({"error": ex.code, "message": str(ex)}), ex.status_code
+
+
+@files_bp.route("/api/files", methods=["GET"])
+def api_list_files():
+    include_expired = (request.args.get("include_expired") or "").lower() in ("1", "true", "yes")
+    return jsonify({"files": list_files(include_expired=include_expired)})
+
+
+@files_bp.route("/w/<slug>/api/files", methods=["GET"])
+def api_list_files_ws(slug: str):
+    if not ensure_workspace_from_slug(slug):
+        return jsonify({"error": "workspace_not_found"}), 404
+    include_expired = (request.args.get("include_expired") or "").lower() in ("1", "true", "yes")
+    return jsonify({"files": list_files(include_expired=include_expired)})
 
 
 @files_bp.route("/upload", methods=["POST"])

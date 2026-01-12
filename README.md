@@ -17,6 +17,7 @@ Panel Flask con:
 - `schema.sql`: schema core + schema por workspace (`files`, `appointments`, `clients`, `client_notes`).
 - `.env.example`: variables requeridas.
 - `requirements.txt`: dependencias.
+- `vetflow_mobile/`: app Flutter (mobile) con consumo de APIs (agenda, clientes, archivos).
 
 ## Variables de entorno
 Copia `.env.example` a `.env` y ajusta:
@@ -71,8 +72,51 @@ Fechas en ISO8601, ejemplo `2025-01-15T10:00:00Z`.
 
 ### Autenticación (APIs)
 - **Clerk (usuarios)**: el navegador obtiene un JWT y llama `POST /session/clerk` con `Authorization: Bearer <JWT>`. El backend valida (JWKS) y crea una sesión (cookie). Las llamadas al mismo origin (panel web) usan esa cookie automáticamente.
+- **JWT (mobile)**: envia `Authorization: Bearer <JWT>` directo en cada request (sin cookie).
 - **API Key (n8n/bots)**: define `VETFLOW_API_KEY` y envía `X-API-Key: <tu-key>` en cada request al panel. Recomendado para integraciones server-to-server (no requiere cookies).
 - **Desactivado (solo dev)**: con `CLERK_AUTH_REQUIRED=0` las APIs quedan públicas.
+
+## App movil (Flutter)
+La app vive en `vetflow_mobile/` y consume las APIs multi-tenant del panel.
+
+### Arquitectura (resumen)
+- Configuracion: `VETFLOW_BASE_URL`, `VETFLOW_SCHEMA`, `VETFLOW_API_KEY`, `VETFLOW_JWT`, `CLERK_PUBLISHABLE_KEY`
+- Data: `ApiClient` llama `/health` y `/w/<schema_name>/api/...`.
+- UI: pantallas Agenda, Clientes, Archivos, Ajustes con `NavigationBar`.
+
+### Diagrama de conexion (mobile)
+```mermaid
+flowchart LR
+    Mobile[Flutter App] -->|X-API-Key o Bearer| API[Flask Vetflow /api]
+    API --> DB[(PostgreSQL)]
+    API --> Blob[Azure Blob Storage]
+    API --> N8N[n8n]
+```
+
+### Conectar al backend desplegado
+1. Define la URL publica (HTTPS recomendado): `https://panel.tudominio.com`.
+2. Usa el `schema_name` del workspace (ej. `ws_demo_1234`).
+3. Configura variables con `--dart-define` al correr.
+
+```powershell
+cd vetflow_mobile
+flutter pub get
+flutter run --dart-define=VETFLOW_BASE_URL=http://127.0.0.1:5000  --dart-define=VETFLOW_SCHEMA=ws_erick_david_flores_campana_e68c  --dart-define=VETFLOW_API_KEY=supersecretkey --dart-define=VETFLOW_JWT=TU_JWT --dart-define=CLERK_PUBLISHABLE_KEY=pk_test_...
+```
+
+### Endpoints usados por la app
+- `GET /health`
+- `GET /w/<schema_name>/api/workspace`
+- `GET /w/<schema_name>/api/calendar`
+- `GET /w/<schema_name>/api/clientes`
+- `GET /w/<schema_name>/api/files`
+
+### Notas de seguridad y red
+- Android: requiere permiso `android.permission.INTERNET`.
+- Con Clerk activo, la app muestra login nativo y envia el JWT en cada request.
+- Evita incrustar `VETFLOW_API_KEY` en apps publicas; para produccion usa Clerk mobile + JWT o un proxy/BFF con tokens cortos.
+- En Android/iOS el trafico HTTP sin TLS puede requerir habilitar cleartext (solo debug).
+- Flutter web requiere CORS: agrega el origin (`http://localhost:<puerto>`) a `CORS_ALLOWED_ORIGINS` o fija el puerto con `flutter run --web-port 5173`.
 
 ## Workspaces y multi-tenancy
 - Tras actualizar el repositorio vuelve a ejecutar `psql "POSTGRES_DSN" -f schema.sql` para asegurarte de que el tipo `vetflow_core.appointment_status`, la función `ensure_workspace_schema` y las tablas globales existen. El script es idempotente.
@@ -259,6 +303,7 @@ curl -X POST "http://localhost:5000/w/demo-vetflow/api/clientes" \
 - Nota UI: los inputs `datetime-local` del modal de creación/edición usan formato local `YYYY-MM-DDTHH:MM`; el panel convierte internamente a ISO con offset para persistir correctamente.
 
 ### Archivos
+- Listar: `GET /w/<schema_name>/api/files` (o `/api/files` para el schema default)
 - Eliminar: `DELETE /w/<schema_name>/api/files/<id>` (o `/api/files/<id>` para el schema default) marca `status=deleting` y notifica `N8N_DELETE_WEBHOOK_URL`.
 - Actualizar metadatos/status (para n8n o bots): `PUT /w/<schema_name>/api/files/<id>` (o `/api/files/<id>` para el schema default)
   En PowerShell:
@@ -479,7 +524,7 @@ Para llevar la imagen a un registro (ej. Docker Hub, Azure CR, AWS ECR):
 1. **Construir la imagen**:
    ```bash
    # Sintaxis: docker build -t <usuario>/<nombre-imagen>:<tag> .
-   docker build -t erifcamp/flow-panel:v1.4.4 .
+   docker build -t erifcamp/flow-panel:v2.0.1 .
    ```
 
 2. **Login en el registro**:
@@ -489,7 +534,7 @@ Para llevar la imagen a un registro (ej. Docker Hub, Azure CR, AWS ECR):
 
 3. **Subir la imagen (Push)**:
    ```bash
-   docker push erifcamp/flow-panel:v1.4.4
+   docker push erifcamp/flow-panel:v2.0.1
    ```
 
 ### Variables de Entorno en Docker
