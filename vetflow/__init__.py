@@ -44,6 +44,7 @@ def create_app() -> Flask:
             "clerk_publishable_key": config.CLERK_PUBLISHABLE_KEY,
             "current_user_name": session.get("current_user_name"),
             "current_user_role": session.get("current_user_role", "Invitado"),
+            "current_membership_role": session.get("current_membership_role"),
         }
 
     @app.after_request

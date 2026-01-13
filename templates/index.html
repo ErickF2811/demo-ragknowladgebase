@@ -311,6 +311,11 @@
   @media (max-width: 500px),
   (max-height: 450px) {
 
+    html,
+    body {
+      overflow-x: hidden;
+    }
+
     .vetflow-nav {
       background: transparent !important;
       border: none !important;
@@ -376,7 +381,7 @@
     }
 
     .app-shell {
-      padding-top: 0 !important;
+      padding-top: 70px !important;
     }
 
     #app-shell-content {
@@ -384,7 +389,7 @@
     }
 
     .main-content-wrapper {
-      padding: 0 !important;
+      padding: 0.5rem 0.75rem 1.25rem !important;
       margin: 0 !important;
       max-width: 100% !important;
       width: 100% !important;
@@ -404,20 +409,22 @@
     }
 
     .summary-card {
-      border: none !important;
-      box-shadow: none !important;
-      background: transparent !important;
+      border: 1px solid var(--vet-border-light) !important;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12) !important;
+      background: var(--vet-bg-surface) !important;
+      border-radius: 16px !important;
       height: auto !important;
+      margin: 0.5rem 0.25rem 1rem !important;
     }
 
     .summary-card-body {
-      padding: 0 !important;
+      padding: 0.75rem 0.9rem 1.25rem !important;
     }
 
     .summary-card-header {
       margin-top: 0 !important;
       margin-bottom: 1rem !important;
-      padding: 12px 12px 12px 60px !important;
+      padding: 0.5rem 0.5rem 0.25rem 0.5rem !important;
       min-height: 50px;
       display: flex !important;
       flex-direction: row !important;
@@ -430,10 +437,11 @@
       margin-right: 0 !important;
       margin-bottom: 1px !important;
       /* Divider effect */
-      border-radius: 0 !important;
+      border-radius: 12px !important;
       border-left: none !important;
       border-right: none !important;
       width: 100% !important;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12) !important;
     }
 
     .app-title {
@@ -744,7 +752,7 @@
     border: 1px solid var(--vet-border-light);
     border-radius: 16px;
     padding: 1.25rem;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
     position: relative;
     overflow: hidden;
@@ -754,14 +762,52 @@
     margin-bottom: 0.75rem;
   }
 
+  .appointment-card {
+    --card-status-color: var(--vet-primary);
+    --card-text-color: var(--vet-text-main);
+    --card-subtext-color: var(--vet-text-secondary);
+    color: var(--card-text-color);
+  }
+
+  .appointment-card .app-title {
+    color: var(--card-text-color);
+  }
+
+  .appointment-card .app-time {
+    color: var(--card-subtext-color);
+  }
+
+  .appointment-card .app-time svg {
+    color: inherit;
+  }
+
   .appointment-card:hover,
   .file-card:hover {
     transform: translateY(-2px);
+  }
+
+  .appointment-card:hover {
+    border-color: var(--card-status-color);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+  }
+
+  .file-card:hover {
     border-color: var(--vet-primary);
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
   }
 
-  .appointment-card::before,
+  .appointment-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 5px;
+    background: var(--card-status-color);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
   .file-card::before {
     content: '';
     position: absolute;
@@ -774,9 +820,61 @@
     transition: opacity 0.2s;
   }
 
-  .appointment-card:hover::before,
+  .appointment-card[class*="status-"]::before {
+    opacity: 0.3;
+  }
+
+  .appointment-card[class*="status-"]:hover::before {
+    opacity: 0.55;
+  }
+
   .file-card:hover::before {
     opacity: 1;
+  }
+
+  .appointment-card.status-programada {
+    --card-status-color: #9f7aea;
+    --card-text-color: #0f172a;
+    --card-subtext-color: rgba(15, 23, 42, 0.7);
+    background: linear-gradient(140deg, rgba(159, 122, 234, 0.2), rgba(159, 122, 234, 0.1));
+    border-color: rgba(159, 122, 234, 0.38);
+    box-shadow: 0 12px 30px rgba(159, 122, 234, 0.22);
+  }
+
+  .appointment-card.status-confirmada {
+    --card-status-color: #38bdf8;
+    --card-text-color: #0f172a;
+    --card-subtext-color: rgba(15, 23, 42, 0.7);
+    background: linear-gradient(140deg, rgba(56, 189, 248, 0.2), rgba(56, 189, 248, 0.1));
+    border-color: rgba(56, 189, 248, 0.4);
+    box-shadow: 0 12px 30px rgba(56, 189, 248, 0.22);
+  }
+
+  .appointment-card.status-completada {
+    --card-status-color: #22c55e;
+    --card-text-color: #0f172a;
+    --card-subtext-color: rgba(15, 23, 42, 0.7);
+    background: linear-gradient(140deg, rgba(34, 197, 94, 0.18), rgba(34, 197, 94, 0.1));
+    border-color: rgba(34, 197, 94, 0.38);
+    box-shadow: 0 12px 30px rgba(34, 197, 94, 0.22);
+  }
+
+  .appointment-card.status-cancelada {
+    --card-status-color: #94a3b8;
+    --card-text-color: #0f172a;
+    --card-subtext-color: rgba(15, 23, 42, 0.65);
+    background: linear-gradient(140deg, rgba(148, 163, 184, 0.2), rgba(148, 163, 184, 0.1));
+    border-color: rgba(148, 163, 184, 0.36);
+    box-shadow: 0 12px 30px rgba(148, 163, 184, 0.2);
+  }
+
+  .appointment-card.status-no_show {
+    --card-status-color: #f59e0b;
+    --card-text-color: #0f172a;
+    --card-subtext-color: rgba(15, 23, 42, 0.7);
+    background: linear-gradient(140deg, rgba(245, 158, 11, 0.2), rgba(245, 158, 11, 0.12));
+    border-color: rgba(245, 158, 11, 0.4);
+    box-shadow: 0 12px 30px rgba(245, 158, 11, 0.22);
   }
 
   /* CUSTOM SCROLLBARS */
@@ -800,13 +898,13 @@
 
   .app-title {
     font-weight: 700;
-    color: var(--vet-text-main);
+    color: var(--card-text-color, var(--vet-text-main));
     font-size: 1rem;
   }
 
   .app-time {
     font-size: 0.8rem;
-    color: var(--vet-text-secondary);
+    color: var(--card-subtext-color, var(--vet-text-secondary));
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -847,6 +945,73 @@
     color: var(--vet-primary);
     line-height: 1.2;
     margin-top: 0.25rem;
+  }
+
+  .member-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .member-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.65rem 0.75rem;
+    border-radius: 14px;
+    background: var(--vet-bg-surface);
+    border: 1px solid var(--vet-border-light);
+  }
+
+  .member-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+  }
+
+  .member-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--vet-primary);
+    color: #fff;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    text-transform: uppercase;
+  }
+
+  .member-meta {
+    min-width: 0;
+  }
+
+  .member-name {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--vet-text-main);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+  }
+
+  .member-email {
+    font-size: 0.75rem;
+    color: var(--vet-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 240px;
+  }
+
+  .member-role-badge {
+    text-transform: uppercase;
+    font-size: 0.65rem;
+    letter-spacing: 0.05em;
   }
 
   /* ACTION BUTTONS */
@@ -1179,6 +1344,10 @@
               <span class="small fw-bold opacity-75">OWNER:</span>
               <span class="small fw-bold">{{ current_workspace.owner_name or "S/N" }}</span>
             </div>
+            <div class="brand-chip px-3 py-1 rounded-pill" style="opacity: 0.9;">
+              <span class="small fw-bold opacity-75">MI ROL:</span>
+              <span class="small fw-bold">{{ (current_membership_role or 'Invitado')|capitalize }}</span>
+            </div>
           </div>
 
           <h1 class="brand-title" style="margin: 0; font-size: clamp(2rem, 3.5vw, 3.5rem); line-height: 1;">{{
@@ -1246,13 +1415,13 @@
               </div>
               <div class="summary-list" data-summary-appointments-list>
                 {% for c in appointments_upcoming|default(appointments) %}
-                <div class="appointment-card" data-appointment-id="{{ c.id }}">
+                <div class="appointment-card status-{{ (c.status|default('programada'))|lower }}"
+                  data-appointment-id="{{ c.id }}">
                   <div class="flex-grow-1">
                     <div class="d-flex justify-content-between align-items-start mb-1">
                       <div class="app-title text-truncate" style="max-width: 280px;" title="{{ c.title }}">{{ c.title }}
                       </div>
-                      <span class="status-badge status-{{ c.status|default('programada') }}"
-                        style="font-size:0.65rem; padding: 0.1rem 0.6rem; border-radius: 99px;">
+                      <span class="status-badge status-{{ (c.status|default('programada'))|lower }}">
                         {{ appointment_status_labels[c.status]|default(c.status|capitalize) }}
                       </span>
                     </div>
@@ -1347,6 +1516,68 @@
                     <div class="summary-kpi-value text-primary">{{ workspace_members|length }}</div>
                   </div>
                 </div>
+              </div>
+            </div>
+
+            <!-- Team Card -->
+            <div class="summary-card">
+              <div class="summary-card-body">
+                <div class="d-flex align-items-center justify-content-between mb-4">
+                  <div class="d-flex align-items-center gap-2">
+                    <div class="p-2 bg-primary-subtle rounded-3 text-primary">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                      </svg>
+                    </div>
+                    <h5 class="mb-0 fw-bold">Equipo</h5>
+                  </div>
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="small text-uppercase text-muted">Mi rol</span>
+                    <span class="badge bg-light text-dark border">{{ (current_membership_role or 'Invitado')|capitalize }}</span>
+                  </div>
+                </div>
+
+                {% if workspace_members %}
+                <div class="member-list">
+                  {% for m in workspace_members[:5] %}
+                  <div class="member-row">
+                    <div class="member-info">
+                      <div class="member-avatar">{{ (m.display_name or m.email or '?')[:1]|upper }}</div>
+                      <div class="member-meta">
+                        <div class="member-name">{{ m.display_name or 'Sin nombre' }}</div>
+                        <div class="member-email">{{ m.email or 'Sin correo' }}</div>
+                      </div>
+                    </div>
+                    <span
+                      class="badge member-role-badge {% if m.role == 'owner' %}bg-primary{% elif m.role == 'admin' %}bg-info{% else %}bg-secondary{% endif %}">
+                      {{ m.role|capitalize }}
+                    </span>
+                  </div>
+                  {% endfor %}
+                </div>
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                  <button class="btn btn-sm btn-light" type="button" data-bs-toggle="modal"
+                    data-bs-target="#membersWorkspaceModal">Ver todos</button>
+                  {% if current_membership_role == 'owner' %}
+                  <button class="btn btn-sm btn-primary" type="button" data-bs-toggle="modal"
+                    data-bs-target="#inviteWorkspaceModal">Invitar</button>
+                  {% endif %}
+                </div>
+                {% else %}
+                <div class="alert alert-light mb-0">
+                  No hay miembros cargados para este workspace.
+                </div>
+                {% if current_membership_role == 'owner' %}
+                <div class="d-flex justify-content-end mt-3">
+                  <button class="btn btn-sm btn-primary" type="button" data-bs-toggle="modal"
+                    data-bs-target="#inviteWorkspaceModal">Invitar</button>
+                </div>
+                {% endif %}
+                {% endif %}
               </div>
             </div>
 
@@ -2135,11 +2366,11 @@
       const datetime = escapeHtml(appt.start_time || appt.end_time || '');
 
       return `
-        <div class="appointment-card" data-appointment-id="${escapeHtml(appt.id)}">
+        <div class="appointment-card status-${status}" data-appointment-id="${escapeHtml(appt.id)}">
           <div class="flex-grow-1">
             <div class="d-flex justify-content-between align-items-start mb-1">
               <div class="app-title text-truncate" style="max-width: 220px;" title="${title}">${title}</div>
-              <span class="status-badge status-${status}" style="font-size:0.65rem; padding: 0.1rem 0.4rem;">
+              <span class="status-badge status-${status}">
                 ${label}
               </span>
             </div>
@@ -2176,7 +2407,7 @@
       nextEl.innerHTML = `
         <div class="d-flex justify-content-between align-items-center mb-1">
           <div class="summary-next-name text-truncate" style="max-width: 220px;" title="${title}">${title}</div>
-          <span class="status-badge status-${status}" style="font-size:0.65rem; padding: 0.1rem 0.4rem;">
+          <span class="status-badge status-${status}">
             ${label}
           </span>
         </div>

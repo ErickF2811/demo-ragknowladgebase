@@ -568,35 +568,30 @@
     }
 
     /* Colores por estado */
-    .status-badge.status-programada,
     .event-pill.status-programada,
     .event-block.event-status-programada {
       background: linear-gradient(135deg, #6f3df4, #9f7aea);
       color: #fff;
     }
 
-    .status-badge.status-confirmada,
     .event-pill.status-confirmada,
     .event-block.event-status-confirmada {
       background: linear-gradient(135deg, #2563eb, #38bdf8);
       color: #fff;
     }
 
-    .status-badge.status-completada,
     .event-pill.status-completada,
     .event-block.event-status-completada {
       background: linear-gradient(135deg, #16a34a, #22c55e);
       color: #fff;
     }
 
-    .status-badge.status-cancelada,
     .event-pill.status-cancelada,
     .event-block.event-status-cancelada {
       background: linear-gradient(135deg, #94a3b8, #cbd5e1);
       color: #0f172a;
     }
 
-    .status-badge.status-no_show,
     .event-pill.status-no_show,
     .event-block.event-status-no_show {
       background: linear-gradient(135deg, #f59e0b, #fbbf24);
@@ -604,11 +599,58 @@
     }
 
     .status-badge {
-      border: none;
-      padding: 0.25rem 0.6rem;
+      --status-color: #9f7aea;
+      background: rgba(159, 122, 234, 0.16);
+      border: 1px solid rgba(159, 122, 234, 0.45);
+      padding: 0.22rem 0.9rem;
       border-radius: 999px;
       font-weight: 700;
-      font-size: 0.78rem;
+      font-size: 0.9rem;
+      letter-spacing: 0.01em;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      color: var(--status-color);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+    }
+
+    .status-badge::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: currentColor;
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.05);
+    }
+
+    .status-badge.status-programada {
+      --status-color: #9f7aea;
+      background: rgba(159, 122, 234, 0.16);
+      border-color: rgba(159, 122, 234, 0.45);
+    }
+
+    .status-badge.status-confirmada {
+      --status-color: #38bdf8;
+      background: rgba(56, 189, 248, 0.16);
+      border-color: rgba(56, 189, 248, 0.45);
+    }
+
+    .status-badge.status-completada {
+      --status-color: #22c55e;
+      background: rgba(34, 197, 94, 0.18);
+      border-color: rgba(34, 197, 94, 0.45);
+    }
+
+    .status-badge.status-cancelada {
+      --status-color: #94a3b8;
+      background: rgba(148, 163, 184, 0.16);
+      border-color: rgba(148, 163, 184, 0.4);
+    }
+
+    .status-badge.status-no_show {
+      --status-color: #f59e0b;
+      background: rgba(245, 158, 11, 0.18);
+      border-color: rgba(245, 158, 11, 0.45);
     }
 
     /* Modals: light touch, keep Bootstrap defaults */
@@ -1124,8 +1166,12 @@
           <!-- Icon will be injected by JS -->
         </button>
         <div class="user-role-card">
-          <small>Rol:</small>
+          <small>Cuenta:</small>
           <span id="clerk-role-pill">{{ current_user_role or 'Invitado' }}</span>
+        </div>
+        <div class="user-role-card">
+          <small>Workspace:</small>
+          <span id="workspace-role-pill">{{ (current_membership_role or 'Sin rol')|capitalize }}</span>
         </div>
         <span id="clerk-user-name">{{ current_user_name or 'Invitado' }}</span>
         <button type="button" class="logout-pill" id="clerk-logout-btn" hidden>Cerrar sesion</button>

@@ -66,7 +66,8 @@
         </div>
         <div class="appointment-list flex-grow-1" id="appointmentsTableBody" style="overflow-y: auto;">
           {% for c in appointments %}
-          <div class="appointment-card" data-appointment-id="{{ c.id }}">
+          <div class="appointment-card status-{{ (c.status|default('programada'))|lower }}"
+            data-appointment-id="{{ c.id }}">
             <div class="d-flex align-items-center gap-2 flex-grow-1">
               <div class="form-check m-0">
                 <input type="checkbox" class="form-check-input appointment-check" value="{{ c.id }}"
@@ -75,7 +76,7 @@
               <div class="flex-grow-1 min-width-0">
                 <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
                   <div class="app-title text-truncate fw-bold" title="{{ c.title }}">{{ c.title }}</div>
-                  <span class="status-badge status-{{ c.status|default('programada') }}"
+                  <span class="status-badge status-{{ (c.status|default('programada'))|lower }}"
                     style="font-size:0.6rem; padding: 0.1rem 0.6rem; border-radius: 20px; white-space: nowrap; flex-shrink: 0;">
                     {{ appointment_status_labels[c.status]|default(c.status|capitalize) }}
                   </span>
