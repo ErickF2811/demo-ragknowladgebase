@@ -432,6 +432,20 @@
       justify-content: space-between !important;
     }
 
+    .summary-filter-bar {
+      padding: 0.15rem 0.25rem 0.35rem 0.25rem !important;
+      gap: 0.25rem !important;
+    }
+
+    .summary-filter-label {
+      font-size: 0.75rem !important;
+    }
+
+    .summary-filter-pill {
+      padding: 0.3rem 0.55rem !important;
+      font-size: 0.78rem !important;
+    }
+
     .appointment-card {
       margin-left: 0 !important;
       margin-right: 0 !important;
@@ -713,6 +727,10 @@
   }
 
   /* SUMMARY TAB SPECIFIC */
+  .summary-grid .summary-card {
+    margin-bottom: 1.5rem;
+  }
+
   .summary-card-body {
     padding: 2.5rem 2rem;
   }
@@ -740,6 +758,105 @@
     margin-bottom: 0;
   }
 
+  .summary-filter-bar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-bottom: 1rem;
+  }
+
+  .summary-filter-label {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: var(--vet-text-main);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .summary-filter-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .summary-filter-pill {
+    --pill-color: var(--vet-text-main);
+    --pill-bg: color-mix(in srgb, var(--pill-color), transparent 88%);
+    --pill-border: color-mix(in srgb, var(--pill-color), transparent 65%);
+    color: var(--pill-color);
+    border: 1px solid var(--pill-border);
+    background: var(--pill-bg);
+    opacity: 1;
+    border-radius: 999px;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.04);
+  }
+
+  .summary-filter-pill .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: currentColor;
+    display: inline-block;
+  }
+
+  .summary-filter-pill.active {
+    color: #fff;
+    background: var(--pill-color);
+    border-color: color-mix(in srgb, var(--pill-color), white 15%);
+    border-width: 2px;
+    box-shadow: 0 10px 30px color-mix(in srgb, var(--pill-color), transparent 55%);
+  }
+
+  .summary-filter-pill[data-status-value="programada"] {
+    --pill-color: #7c3aed;
+  }
+
+  .summary-filter-pill[data-status-value="confirmada"] {
+    --pill-color: #0ea5e9;
+  }
+
+  .summary-filter-pill[data-status-value="completada"] {
+    --pill-color: #16a34a;
+  }
+
+  .summary-filter-pill[data-status-value="cancelada"] {
+    --pill-color: #6b7280;
+  }
+
+  .summary-filter-pill[data-status-value="no_show"] {
+    --pill-color: #d97706;
+  }
+
+  .summary-filter-pill[data-status-value="all"] {
+    --pill-color: var(--vet-text-main);
+  }
+
+  [data-theme="dark"] .summary-filter-pill {
+    --pill-bg: color-mix(in srgb, var(--pill-color), transparent 80%) !important;
+    --pill-border: color-mix(in srgb, var(--pill-color), transparent 55%) !important;
+    color: color-mix(in srgb, var(--pill-color), white 35%) !important;
+    opacity: 1;
+  }
+
+  [data-theme="dark"] .summary-filter-pill.active {
+    color: #0b1020 !important;
+    border-color: color-mix(in srgb, var(--pill-color), white 30%) !important;
+  }
+
+  .summary-filter-pill:hover {
+    transform: translateY(-1px);
+    border-color: color-mix(in srgb, var(--pill-color), black 10%);
+  }
+
   .summary-list {
     display: flex;
     flex-direction: column;
@@ -765,7 +882,7 @@
   .appointment-card {
     --card-status-color: var(--vet-primary);
     --card-text-color: var(--vet-text-main);
-    --card-subtext-color: var(--vet-text-secondary);
+    --card-subtext-color: color-mix(in srgb, var(--vet-text-main), transparent 35%);
     color: var(--card-text-color);
   }
 
@@ -794,6 +911,14 @@
   .file-card:hover {
     border-color: var(--vet-primary);
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+  }
+
+  .file-card {
+    overflow: visible;
+  }
+
+  .file-card .dropdown-menu {
+    z-index: 1055;
   }
 
   .appointment-card::before {
@@ -834,8 +959,8 @@
 
   .appointment-card.status-programada {
     --card-status-color: #9f7aea;
-    --card-text-color: #0f172a;
-    --card-subtext-color: rgba(15, 23, 42, 0.7);
+    --card-text-color: var(--vet-text-main);
+    --card-subtext-color: color-mix(in srgb, var(--vet-text-main), transparent 35%);
     background: linear-gradient(140deg, rgba(159, 122, 234, 0.2), rgba(159, 122, 234, 0.1));
     border-color: rgba(159, 122, 234, 0.38);
     box-shadow: 0 12px 30px rgba(159, 122, 234, 0.22);
@@ -843,8 +968,8 @@
 
   .appointment-card.status-confirmada {
     --card-status-color: #38bdf8;
-    --card-text-color: #0f172a;
-    --card-subtext-color: rgba(15, 23, 42, 0.7);
+    --card-text-color: var(--vet-text-main);
+    --card-subtext-color: color-mix(in srgb, var(--vet-text-main), transparent 35%);
     background: linear-gradient(140deg, rgba(56, 189, 248, 0.2), rgba(56, 189, 248, 0.1));
     border-color: rgba(56, 189, 248, 0.4);
     box-shadow: 0 12px 30px rgba(56, 189, 248, 0.22);
@@ -852,8 +977,8 @@
 
   .appointment-card.status-completada {
     --card-status-color: #22c55e;
-    --card-text-color: #0f172a;
-    --card-subtext-color: rgba(15, 23, 42, 0.7);
+    --card-text-color: var(--vet-text-main);
+    --card-subtext-color: color-mix(in srgb, var(--vet-text-main), transparent 35%);
     background: linear-gradient(140deg, rgba(34, 197, 94, 0.18), rgba(34, 197, 94, 0.1));
     border-color: rgba(34, 197, 94, 0.38);
     box-shadow: 0 12px 30px rgba(34, 197, 94, 0.22);
@@ -861,8 +986,8 @@
 
   .appointment-card.status-cancelada {
     --card-status-color: #94a3b8;
-    --card-text-color: #0f172a;
-    --card-subtext-color: rgba(15, 23, 42, 0.65);
+    --card-text-color: var(--vet-text-main);
+    --card-subtext-color: color-mix(in srgb, var(--vet-text-main), transparent 35%);
     background: linear-gradient(140deg, rgba(148, 163, 184, 0.2), rgba(148, 163, 184, 0.1));
     border-color: rgba(148, 163, 184, 0.36);
     box-shadow: 0 12px 30px rgba(148, 163, 184, 0.2);
@@ -870,8 +995,8 @@
 
   .appointment-card.status-no_show {
     --card-status-color: #f59e0b;
-    --card-text-color: #0f172a;
-    --card-subtext-color: rgba(15, 23, 42, 0.7);
+    --card-text-color: var(--vet-text-main);
+    --card-subtext-color: color-mix(in srgb, var(--vet-text-main), transparent 35%);
     background: linear-gradient(140deg, rgba(245, 158, 11, 0.2), rgba(245, 158, 11, 0.12));
     border-color: rgba(245, 158, 11, 0.4);
     box-shadow: 0 12px 30px rgba(245, 158, 11, 0.22);
@@ -1302,6 +1427,7 @@
       </ul>
     </div>
 
+    {% if current_membership_role == 'owner' %}
     <div class="mt-auto d-flex flex-column gap-1">
       <button class="side-link border-0 text-danger opacity-75" data-bs-toggle="modal"
         data-bs-target="#deleteWorkspaceModal" style="font-size: 0.85rem;">
@@ -1316,6 +1442,7 @@
         Eliminar Área
       </button>
     </div>
+    {% endif %}
   </aside>
 
   <div class="main-content-wrapper">
@@ -1359,7 +1486,7 @@
       </div>
 
       <div class="hero-content-right">
-        {% if current_membership_role == 'owner' %}
+        {% if current_membership_role in ['owner', 'admin'] %}
         <button class="btn-glass" data-bs-toggle="modal" data-bs-target="#editWorkspaceModal">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
             stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -1411,6 +1538,35 @@
                     data-summary-upcoming-count>
                     {{ (appointments_upcoming|default(appointments))|length }}
                   </span>
+                </div>
+              </div>
+              <div class="summary-filter-bar">
+                <span class="summary-filter-label">Estado</span>
+                <div class="summary-filter-pills" data-status-filter>
+                  <button type="button" class="summary-filter-pill active" data-status-value="all">
+                    <span class="dot" style="background: var(--vet-primary);"></span>
+                    Todas
+                  </button>
+                  <button type="button" class="summary-filter-pill" data-status-value="programada">
+                    <span class="dot" style="background: #9f7aea;"></span>
+                    Programadas
+                  </button>
+                  <button type="button" class="summary-filter-pill" data-status-value="confirmada">
+                    <span class="dot" style="background: #38bdf8;"></span>
+                    Confirmadas
+                  </button>
+                  <button type="button" class="summary-filter-pill" data-status-value="completada">
+                    <span class="dot" style="background: #22c55e;"></span>
+                    Completadas
+                  </button>
+                  <button type="button" class="summary-filter-pill" data-status-value="cancelada">
+                    <span class="dot" style="background: #94a3b8;"></span>
+                    Canceladas
+                  </button>
+                  <button type="button" class="summary-filter-pill" data-status-value="no_show">
+                    <span class="dot" style="background: #f59e0b;"></span>
+                    No Show
+                  </button>
                 </div>
               </div>
               <div class="summary-list" data-summary-appointments-list>
@@ -1559,24 +1715,30 @@
                   </div>
                   {% endfor %}
                 </div>
-                <div class="d-flex justify-content-between align-items-center mt-3">
+                <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
                   <button class="btn btn-sm btn-light" type="button" data-bs-toggle="modal"
                     data-bs-target="#membersWorkspaceModal">Ver todos</button>
-                  {% if current_membership_role == 'owner' %}
-                  <button class="btn btn-sm btn-primary" type="button" data-bs-toggle="modal"
-                    data-bs-target="#inviteWorkspaceModal">Invitar</button>
-                  {% endif %}
+                  <div class="d-flex align-items-center gap-2">
+                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="modal"
+                      data-bs-target="#acceptInviteModal">Unirme con código</button>
+                    {% if current_membership_role in ['owner', 'admin'] %}
+                    <button class="btn btn-sm btn-primary" type="button" data-bs-toggle="modal"
+                      data-bs-target="#inviteWorkspaceModal">Invitar</button>
+                    {% endif %}
+                  </div>
                 </div>
                 {% else %}
                 <div class="alert alert-light mb-0">
                   No hay miembros cargados para este workspace.
                 </div>
-                {% if current_membership_role == 'owner' %}
-                <div class="d-flex justify-content-end mt-3">
+                <div class="d-flex justify-content-end align-items-center gap-2 mt-3">
+                  <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="modal"
+                    data-bs-target="#acceptInviteModal">Unirme con código</button>
+                  {% if current_membership_role in ['owner', 'admin'] %}
                   <button class="btn btn-sm btn-primary" type="button" data-bs-toggle="modal"
                     data-bs-target="#inviteWorkspaceModal">Invitar</button>
+                  {% endif %}
                 </div>
-                {% endif %}
                 {% endif %}
               </div>
             </div>
@@ -2116,7 +2278,7 @@
                 <th>Nombre</th>
                 <th>Rol</th>
                 <th>Ingreso</th>
-                {% if current_membership_role == 'owner' %}<th></th>{% endif %}
+                {% if current_membership_role in ['owner', 'admin'] %}<th></th>{% endif %}
               </tr>
             </thead>
             <tbody>
@@ -2131,7 +2293,7 @@
                   </span>
                 </td>
                 <td class="text-muted small">{{ m.joined_at }}</td>
-                {% if current_membership_role == 'owner' %}
+                {% if current_membership_role in ['owner', 'admin'] %}
                 <td class="text-end">
                   {% if m.role != 'owner' %}
                   <button class="btn btn-sm btn-outline-danger" type="button" data-remove-member
@@ -2279,10 +2441,14 @@
     const totalEl = panel.querySelector('[data-summary-total-count]');
     const upcomingEl = panel.querySelector('[data-summary-upcoming-kpi]');
     const nextEl = panel.querySelector('[data-summary-next]');
+    const filterEl = panel.querySelector('[data-status-filter]');
     const refreshMs = 2000;
     let refreshTimer = null;
     let hasLoaded = false;
-    let previousIds = new Set();
+    let previousAllIds = new Set();
+    let cachedUpcoming = [];
+    let cachedTotals = { total: 0, upcoming: 0 };
+    let activeStatuses = new Set(['all']);
     const soundUrl = "{{ url_for('static', filename='music/ta-da_yrvBrlS.mp3') }}";
     const summarySound = new Audio(soundUrl);
     summarySound.preload = 'auto';
@@ -2338,6 +2504,43 @@
       const key = String(status || 'programada').toLowerCase();
       const fallback = key ? `${key.charAt(0).toUpperCase()}${key.slice(1)}` : 'Programada';
       return labels[key] || fallback;
+    };
+
+    const matchesStatusFilter = (appt) => {
+      if (activeStatuses.has('all')) return true;
+      const status = String(appt.status || 'programada').toLowerCase();
+      return activeStatuses.has(status);
+    };
+
+    const syncFilterUI = () => {
+      if (!filterEl) return;
+      filterEl.querySelectorAll('.summary-filter-pill').forEach((btn) => {
+        const value = btn.getAttribute('data-status-value');
+        const isActive = activeStatuses.has('all') ? value === 'all' : activeStatuses.has(value);
+        btn.classList.toggle('active', Boolean(isActive));
+      });
+    };
+
+    const handleStatusClick = (event) => {
+      const btn = event.target.closest('[data-status-value]');
+      if (!btn || !filterEl || !filterEl.contains(btn)) return;
+      const value = btn.getAttribute('data-status-value');
+      if (!value) return;
+
+      if (value === 'all') {
+        activeStatuses = new Set(['all']);
+      } else {
+        if (activeStatuses.has(value)) {
+          activeStatuses.delete(value);
+        } else {
+          activeStatuses.add(value);
+        }
+        activeStatuses.delete('all');
+        if (!activeStatuses.size) activeStatuses.add('all');
+      }
+
+      syncFilterUI();
+      applyFilters();
     };
 
     const emptyHtml = `
@@ -2430,6 +2633,25 @@
       if (upcomingEl) upcomingEl.textContent = String(upcoming);
     };
 
+    const applyFilters = () => {
+      if (!cachedUpcoming.length && !hasLoaded) return;
+
+      const filtered = cachedUpcoming.filter(matchesStatusFilter);
+      const limited = filtered.slice(0, 50);
+
+      if (listEl) {
+        if (!limited.length) {
+          listEl.innerHTML = emptyHtml;
+        } else {
+          listEl.innerHTML = limited.map(renderAppointment).join('');
+        }
+      }
+
+      if (countEl) countEl.textContent = String(filtered.length);
+      renderNext(limited[0]);
+
+    };
+
     const refreshSummary = async () => {
       try {
         const res = await fetch(apiBase, { headers: { Accept: 'application/json' }, cache: 'no-store' });
@@ -2449,33 +2671,28 @@
           .filter((appt) => Number.isFinite(appt.bestTs) && appt.bestTs >= nowTs)
           .sort((a, b) => (a.startTs ?? a.bestTs) - (b.startTs ?? b.bestTs));
 
-        updateCounts(items.length, upcoming.length);
+        cachedUpcoming = upcoming;
+        cachedTotals = { total: items.length, upcoming: upcoming.length };
+        updateCounts(cachedTotals.total, cachedTotals.upcoming);
 
-        const visibleUpcoming = upcoming.slice(0, 50);
-        if (listEl) {
-          if (!visibleUpcoming.length) {
-            listEl.innerHTML = emptyHtml;
-          } else {
-            listEl.innerHTML = visibleUpcoming.map(renderAppointment).join('');
-          }
-        }
-        renderNext(visibleUpcoming[0]);
-
-        const nextIds = new Set(
-          visibleUpcoming
+        const upcomingIds = new Set(
+          upcoming
             .map((appt) => String(appt.id ?? '').trim())
             .filter((id) => id.length)
         );
+
         if (hasLoaded) {
           let hasNew = false;
-          nextIds.forEach((id) => {
-            if (!previousIds.has(id)) hasNew = true;
+          upcomingIds.forEach((id) => {
+            if (!previousAllIds.has(id)) hasNew = true;
           });
           if (hasNew) playSound();
         } else {
           hasLoaded = true;
         }
-        previousIds = nextIds;
+        previousAllIds = upcomingIds;
+
+        applyFilters();
       } catch (err) {
         console.warn('Summary refresh failed', err);
       }
@@ -2525,6 +2742,10 @@
     };
 
     const init = () => {
+      syncFilterUI();
+      if (filterEl) {
+        filterEl.addEventListener('click', handleStatusClick);
+      }
       refreshSummary();
       startRefreshLoop();
       if (listEl) {
