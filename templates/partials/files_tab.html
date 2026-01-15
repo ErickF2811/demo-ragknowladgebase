@@ -86,7 +86,8 @@
       <div class="d-flex flex-column gap-2 mb-4">
         {% for f in files %}
         {% set st = (f.status or 'uploaded')|lower %}
-        <div class="file-card p-3">
+        {% if st not in ['expired', 'expirada'] %}
+        <div class="file-card p-3" data-file-id="{{ f.id }}" data-file-status="{{ st }}">
           <div
             style="width: 40px; height: 40px; min-width: 40px; display: flex; align-items: center; justify-content: center; background: var(--vet-bg-subtle); border-radius: 8px;">
             {% if f.thumbnail_url and st != 'expired' %}
@@ -131,82 +132,37 @@
             </div>
           </div>
 
-          <div class="dropdown">
-            <button class="btn btn-icon-soft" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="1" />
-                <circle cx="12" cy="5" r="1" />
-                <circle cx="12" cy="19" r="1" />
-              </svg>
+          <div class="file-actions">
+            <button class="file-action-btn ghost" type="button" data-file-action="open"
+              onclick="openFile({{ f.id }})">
+              Ver archivo
             </button>
-            <ul class="dropdown-menu dropdown-menu-end shadow border-0 p-2"
-              style="border-radius: 12px; min-width: 200px;">
-              <li><button class="dropdown-item rounded-2 mb-1 d-flex align-items-center gap-2"
-                  onclick="openFile({{ f.id }})">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-                    <circle cx="12" cy="12" r="3" />
-                  </svg>
-                  Ver archivo
-                </button></li>
 
-              <li>
-                <form action="/files/{{ f.id }}/send-to-n8n" method="post" class="m-0">
-                  {% if st in ['expired', 'expirada', 'deleting', 'eliminando'] %}
-                  <button class="dropdown-item rounded-2 mb-1 d-flex align-items-center gap-2 disabled text-muted"
-                    type="button" disabled>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <line x1="22" y1="2" x2="11" y2="13" />
-                      <polygon points="22 2 15 22 11 13 2 9 22 2" />
-                    </svg>
-                    Enviar al bot
-                  </button>
-                  {% else %}
-                  <button class="dropdown-item rounded-2 mb-1 d-flex align-items-center gap-2" type="submit">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                      stroke="var(--vet-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <line x1="22" y1="2" x2="11" y2="13" />
-                      <polygon points="22 2 15 22 11 13 2 9 22 2" />
-                    </svg>
-                    Enviar al bot
-                  </button>
-                  {% endif %}
-                </form>
-              </li>
+            <form action="/files/{{ f.id }}/send-to-n8n" method="post" class="m-0 file-action-form"
+              data-file-action="send" data-file-id="{{ f.id }}">
+              {% if st in ['expired', 'expirada', 'deleting', 'eliminando'] %}
+              <button class="file-action-btn ghost disabled" type="button" disabled data-file-action-button="send">
+                Enviar al bot
+              </button>
+              {% else %}
+              <button class="file-action-btn send" type="submit" data-file-action-button="send">
+                Enviar al bot
+              </button>
+              {% endif %}
+            </form>
 
-              <li>
-                <hr class="dropdown-divider my-1">
-              </li>
-
-              <li>
-                <form action="/files/{{ f.id }}/delete" method="post" class="m-0"
-                  onsubmit="return confirm('¿Borrar este archivo?');">
-                  {% if st in ['deleting', 'eliminando'] %}
-                  <button class="dropdown-item rounded-2 d-flex align-items-center gap-2 text-warning" type="submit">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
-                      <path d="M21 3v5h-5" />
-                    </svg>
-                    Reintentar borrado
-                  </button>
-                  {% else %}
-                  <button class="dropdown-item rounded-2 d-flex align-items-center gap-2 text-danger" type="submit" {%
-                    if st in ['expired', 'expirada' , 'deleting' ] %}disabled{% endif %}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <polyline points="3 6 5 6 21 6" />
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                    </svg>
-                    Eliminar
-                  </button>
-                  {% endif %}
-                </form>
-              </li>
-            </ul>
+            <form action="/files/{{ f.id }}/delete" method="post" class="m-0 file-action-form"
+              data-file-action="delete" data-file-id="{{ f.id }}" data-confirm="¿Borrar este archivo?">
+              {% if st in ['deleting', 'eliminando'] %}
+              <button class="file-action-btn warning" type="submit" data-file-action-button="delete">
+                Reintentar borrado
+              </button>
+              {% else %}
+              <button class="file-action-btn danger" type="submit" data-file-action-button="delete" {% if st in ['expired', 'expirada' , 'deleting' ] %}disabled{% endif %}>
+                Eliminar
+              </button>
+              {% endif %}
+            </form>
           </div>
         </div>
         {% else %}
@@ -220,6 +176,7 @@
           </div>
           <p>No hay archivos aun</p>
         </div>
+        {% endif %}
         {% endfor %}
       </div>
     </div>

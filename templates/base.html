@@ -1166,15 +1166,10 @@
           <!-- Icon will be injected by JS -->
         </button>
         <div class="user-role-card">
-          <small>Cuenta:</small>
-          <span id="clerk-role-pill">{{ current_user_role or 'Invitado' }}</span>
-        </div>
-        <div class="user-role-card">
           <small>Workspace:</small>
           <span id="workspace-role-pill">{{ (current_membership_role or 'Sin rol')|capitalize }}</span>
         </div>
-        <span id="clerk-user-name">{{ current_user_name or 'Invitado' }}</span>
-        <button type="button" class="logout-pill" id="clerk-logout-btn" hidden>Cerrar sesion</button>
+        <span id="clerk-user-name" class="d-none">{{ current_user_name or 'Invitado' }}</span>
         <div id="clerk-user-button"></div>
       </div>
     </nav>

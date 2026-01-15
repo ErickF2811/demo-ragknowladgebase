@@ -14,6 +14,7 @@ class AuthGate extends StatelessWidget {
   Widget build(BuildContext context) {
     final scope = AppScope.of(context);
     final authSession = scope.auth;
+    authSession.setRefresher(() async => null);
     return ClerkAuthBuilder(
       signedInBuilder: (context, authState) {
         return ClerkTokenSync(
@@ -55,6 +56,7 @@ class _ClerkTokenSyncState extends State<ClerkTokenSync> {
   @override
   void initState() {
     super.initState();
+    widget.session.setRefresher(() => _fetchToken(widget.authState));
     _syncToken();
     _sub = widget.authState.sessionTokenStream.listen((token) {
       widget.session.updateJwt(token.jwt);
@@ -66,6 +68,7 @@ class _ClerkTokenSyncState extends State<ClerkTokenSync> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.authState != widget.authState) {
       _sub?.cancel();
+      widget.session.setRefresher(() => _fetchToken(widget.authState));
       _syncToken();
       _sub = widget.authState.sessionTokenStream.listen((token) {
         widget.session.updateJwt(token.jwt);
@@ -74,12 +77,7 @@ class _ClerkTokenSyncState extends State<ClerkTokenSync> {
   }
 
   Future<void> _syncToken() async {
-    try {
-      final token = await widget.authState.sessionToken();
-      widget.session.updateJwt(token.jwt);
-    } catch (_) {
-      // The auth state will surface errors through Clerk error streams.
-    }
+    await _fetchToken(widget.authState);
   }
 
   @override
@@ -90,6 +88,17 @@ class _ClerkTokenSyncState extends State<ClerkTokenSync> {
 
   @override
   Widget build(BuildContext context) => widget.child;
+
+  Future<String?> _fetchToken(ClerkAuthState state) async {
+    try {
+      final token = await state.sessionToken();
+      widget.session.updateJwt(token.jwt);
+      return token.jwt;
+    } catch (_) {
+      // The auth state will surface errors through Clerk error streams.
+      return widget.session.jwt;
+    }
+  }
 }
 
 class SignInScreen extends StatelessWidget {

@@ -36,9 +36,12 @@ dependencies:
   cupertino_icons: ^1.0.8
   http: ^1.2.2
   intl: ^0.20.1
+  url_launcher: ^6.2.6
+  share_plus: ^7.2.1
   google_fonts: ^6.2.1
   clerk_flutter: ^0.0.13-beta
   clerk_auth: ^0.0.13-beta
+  shared_preferences: ^2.3.2
 
 dev_dependencies:
   flutter_test:

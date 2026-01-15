@@ -4,10 +4,24 @@ class AuthSession extends ChangeNotifier {
   AuthSession({String? initialJwt}) : _jwt = initialJwt;
 
   String? _jwt;
+  Future<String?> Function()? _refresher;
 
   String? get jwt => _jwt;
 
   bool get isAuthenticated => _jwt != null && _jwt!.isNotEmpty;
+
+  void setRefresher(Future<String?> Function()? refresher) {
+    _refresher = refresher;
+  }
+
+  Future<String?> token() async {
+    if (_refresher != null) {
+      final fresh = await _refresher!.call();
+      updateJwt(fresh);
+      return fresh;
+    }
+    return _jwt;
+  }
 
   void updateJwt(String? token) {
     if (token == _jwt) {
@@ -17,5 +31,8 @@ class AuthSession extends ChangeNotifier {
     notifyListeners();
   }
 
-  void clear() => updateJwt(null);
+  void clear() {
+    _refresher = null;
+    updateJwt(null);
+  }
 }

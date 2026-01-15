@@ -65,7 +65,9 @@
           </button>
         </div>
         <div class="appointment-list flex-grow-1" id="appointmentsTableBody" style="overflow-y: auto;">
-          {% for c in appointments %}
+          {% set upcoming_ids = appointments_upcoming|map(attribute='id')|list %}
+          <div class="small text-uppercase fw-bold text-muted mb-2">Citas proximas</div>
+          {% for c in appointments_upcoming %}
           <div class="appointment-card status-{{ (c.status|default('programada'))|lower }}"
             data-appointment-id="{{ c.id }}">
             <div class="d-flex align-items-center gap-2 flex-grow-1">
@@ -132,6 +134,71 @@
             <div class="small opacity-75">para este periodo</div>
           </div>
           {% endfor %}
+
+          <hr class="my-3">
+          <div class="small text-uppercase fw-bold text-muted mb-2">Citas pasadas</div>
+          {% set past_count = 0 %}
+          {% for c in appointments %}
+          {% if c.id not in upcoming_ids %}
+          {% set past_count = past_count + 1 %}
+          <div class="appointment-card status-{{ (c.status|default('programada'))|lower }}"
+            data-appointment-id="{{ c.id }}">
+            <div class="d-flex align-items-center gap-2 flex-grow-1">
+              <div class="form-check m-0">
+                <input type="checkbox" class="form-check-input appointment-check" value="{{ c.id }}"
+                  style="width: 1.1rem; height: 1.1rem; border-color: var(--vet-border); cursor: pointer;">
+              </div>
+              <div class="flex-grow-1 min-width-0">
+                <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
+                  <div class="app-title text-truncate fw-bold" title="{{ c.title }}">{{ c.title }}</div>
+                  <span class="status-badge status-{{ (c.status|default('programada'))|lower }}"
+                    style="font-size:0.6rem; padding: 0.1rem 0.6rem; border-radius: 20px; white-space: nowrap; flex-shrink: 0;">
+                    {{ appointment_status_labels[c.status]|default(c.status|capitalize) }}
+                  </span>
+                </div>
+                <div class="app-time d-flex align-items-center gap-2 opacity-75">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 16 14" />
+                  </svg>
+                  <span class="appointment-date small" data-datetime="{{ c.start_time }}">{{
+                    (c.start_time|string)[:10] }}</span>
+                  <span class="mx-1">•</span>
+                  <span class="appointment-hour small fw-bold" data-datetime="{{ c.start_time }}">{{
+                    (c.start_time|string)[11:16] }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="d-flex flex-column gap-1 ms-2">
+              <button class="btn-icon-soft primary" type="button"
+                onclick="openEdit({{ c.id }}, '{{ c.title|escape }}', '{{ c.description|default('', true)|escape }}', '{{ c.start_time }}', '{{ c.end_time }}', '{{ c.status|default('programada') }}', {{ c.client_id if c.client_id is not none else 'null' }})"
+                title="Editar">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 20h9" />
+                  <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                </svg>
+              </button>
+              <form action="/calendar/{{ c.id }}/delete" method="post" class="m-0">
+                <button class="btn-icon-soft danger" type="submit" title="Eliminar">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 6h18" />
+                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                  </svg>
+                </button>
+              </form>
+            </div>
+          </div>
+          {% endif %}
+          {% endfor %}
+          {% if past_count == 0 %}
+          <div class="text-center text-muted py-4">
+            <div class="small fw-semibold">Sin citas pasadas</div>
+          </div>
+          {% endif %}
         </div>
       </div>
     </div>

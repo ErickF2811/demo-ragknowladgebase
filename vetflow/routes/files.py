@@ -160,6 +160,11 @@ def api_delete_file_ws(slug: str, file_id: int):
 @files_bp.route("/files/<int:file_id>/send-to-n8n", methods=["POST"])
 def send_to_n8n_route(file_id: int):
     ok, message = send_to_n8n(file_id)
+    wants_json = "application/json" in (request.headers.get("Accept") or "").lower()
+    wants_json = wants_json or (request.headers.get("X-Requested-With") or "").lower() == "fetch"
+    if wants_json:
+        status = 200 if ok else 400
+        return jsonify({"ok": ok, "message": message, "status": "processing" if ok else None}), status
     if ok:
         flash(message, "success")
     else:

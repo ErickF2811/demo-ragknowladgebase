@@ -89,6 +89,12 @@ class VetflowTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         labelStyle: textTheme.labelMedium?.copyWith(color: textMuted),
       ),
+      dropdownMenuTheme: DropdownMenuThemeData(
+        textStyle: textTheme.bodyMedium?.copyWith(color: textMain),
+        menuStyle: MenuStyle(
+          backgroundColor: WidgetStatePropertyAll(surface),
+        ),
+      ),
     );
   }
 }

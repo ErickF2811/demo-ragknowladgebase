@@ -50,6 +50,7 @@ class Client {
   final String idNumber;
   final String? phone;
   final String? email;
+  final String? address;
   final bool blacklisted;
   final String? notes;
 
@@ -60,6 +61,7 @@ class Client {
     required this.idNumber,
     this.phone,
     this.email,
+    this.address,
     required this.blacklisted,
     this.notes,
   });
@@ -72,6 +74,7 @@ class Client {
       idNumber: (json['id_number'] as String?) ?? '',
       phone: json['phone'] as String?,
       email: json['email'] as String?,
+      address: json['address'] as String?,
       blacklisted: (json['blacklisted'] as bool?) ?? false,
       notes: json['notes'] as String?,
     );
@@ -83,6 +86,7 @@ class FileItem {
   final String filename;
   final String? folder;
   final String? status;
+  final String? blobUrl;
   final List<String> tags;
   final DateTime? createdAt;
 
@@ -91,6 +95,7 @@ class FileItem {
     required this.filename,
     this.folder,
     this.status,
+    this.blobUrl,
     required this.tags,
     this.createdAt,
   });
@@ -110,6 +115,7 @@ class FileItem {
       filename: (json['filename'] as String?) ?? '',
       folder: json['folder'] as String?,
       status: json['status'] as String?,
+      blobUrl: json['blob_url'] as String?,
       tags: tags,
       createdAt: _parseDate(json['created_at']),
     );

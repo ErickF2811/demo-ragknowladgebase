@@ -204,29 +204,58 @@
     document.body.classList.add('fc-custom-weekdays')
   }
 
-  const fetchEvents = async (info, success, failure) => {
-    try {
-      const res = await fetch(apiBase(), { headers: { Accept: 'application/json', 'X-Timezone': clientTimeZone } })
-      const data = await res.json().catch(() => [])
-      if (!res.ok) throw new Error(data?.error || `Error ${res.status}`)
+  const preloadedAppointments = () => (Array.isArray(window.vetflowData?.appointments) ? window.vetflowData.appointments : [])
+  const mapAppointmentsToEvents = (items) =>
+    (Array.isArray(items) ? items : []).map((a) => ({
+      id: String(a.id),
+      title: a.title || '(Sin titulo)',
+      start: a.start_time,
+      end: a.end_time,
+      backgroundColor: statusColor(a.status),
+      borderColor: statusColor(a.status),
+      extendedProps: {
+        status: a.status,
+        description: a.description || '',
+        client_id: a.client_id ?? null,
+      },
+    }))
 
-      const events = (Array.isArray(data) ? data : []).map((a) => ({
-        id: String(a.id),
-        title: a.title || '(Sin título)',
-        start: a.start_time,
-        end: a.end_time,
-        backgroundColor: statusColor(a.status),
-        borderColor: statusColor(a.status),
-        extendedProps: {
-          status: a.status,
-          description: a.description || '',
-          client_id: a.client_id ?? null,
-        },
-      }))
+  const fetchEvents = async (info, success, failure) => {
+    const fallbackEvents = () => mapAppointmentsToEvents(preloadedAppointments())
+    try {
+      const res = await fetch(apiBase(), {
+        headers: { Accept: 'application/json', 'X-Timezone': clientTimeZone },
+        credentials: 'include',
+      })
+      const data = await res.json().catch(() => [])
+      if (!res.ok) {
+        const fallback = fallbackEvents()
+        if (fallback.length) {
+          console.warn('FullCalendar API fallo, usando datos precargados')
+          success(fallback)
+          return
+        }
+        throw new Error(data?.error || `Error ${res.status}`)
+      }
+
+      const events = mapAppointmentsToEvents(data)
+      if (!events.length) {
+        const fallback = fallbackEvents()
+        if (fallback.length) {
+          console.info('FullCalendar sin datos desde API, usando datos precargados')
+          success(fallback)
+          return
+        }
+      }
       success(events)
     } catch (err) {
       console.error('FullCalendar fetchEvents', err)
-      failure(err)
+      const fallback = fallbackEvents()
+      if (fallback.length) {
+        success(fallback)
+        return
+      }
+      if (typeof failure === 'function') failure(err)
     }
   }
 
@@ -254,6 +283,7 @@
     const url = `${base}/${encodeURIComponent(id)}`
     const res = await fetch(url, {
       method: 'PUT',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-Timezone': clientTimeZone },
       body: JSON.stringify(payload),
     })
@@ -267,7 +297,11 @@
     if (!confirm('¿Eliminar esta cita?')) return
     const base = apiBase()
     const url = `${base}/${encodeURIComponent(id)}`
-    const res = await fetch(url, { method: 'DELETE', headers: { Accept: 'application/json', 'X-Timezone': clientTimeZone } })
+    const res = await fetch(url, {
+      method: 'DELETE',
+      credentials: 'include',
+      headers: { Accept: 'application/json', 'X-Timezone': clientTimeZone },
+    })
     const data = await res.json().catch(() => ({}))
     if (!res.ok) throw new Error(data.error || `Error ${res.status}`)
     calendar?.refetchEvents()
@@ -282,8 +316,8 @@
       return
     }
     calendar = new window.FullCalendar.Calendar(container, {
-      // Default: vista diaria tipo agenda
-      initialView: 'timeGridDay',
+      // Default: vista semanal tipo agenda
+      initialView: 'timeGridWeek',
       // Altura fija para habilitar scroll vertical en timeGrid
       height: 650,
       locale: 'es',
@@ -292,6 +326,7 @@
       editable: true,
       nowIndicator: true,
       dayMaxEvents: true,
+      slotEventOverlap: false,
       dayHeaders: true,
       dayHeaderFormat: { weekday: 'short' },
       dayHeaderContent: (args) => formatDayHeader(args.date, args.view?.type),

@@ -52,7 +52,10 @@
     }
     clientsLoading = (async () => {
       try {
-        const res = await fetch(`${base}?limit=500`, { headers: { Accept: "application/json" } });
+        const res = await fetch(`${base}?limit=500`, {
+          headers: { Accept: "application/json" },
+          credentials: "include",
+        });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
         clientsCache = Array.isArray(data.clients) ? data.clients : [];
@@ -359,6 +362,157 @@
     start: parseLocalDate(ev.start_time),
     end: parseLocalDate(ev.end_time),
   }));
+
+  const escapeHtml = (value) =>
+    String(value ?? "").replace(/[&<>"']/g, (ch) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;",
+    }[ch]));
+
+  const getAppointmentsApiBase = () => {
+    const surface = document.getElementById("calendarSurface");
+    const slug = surface?.dataset?.workspaceSlug;
+    return slug ? `/w/${slug}/api/calendar` : "/api/calendar";
+  };
+
+  const buildAppointmentCard = (appt) => {
+    const status = String(appt.status || DEFAULT_STATUS).toLowerCase();
+    const label = escapeHtml(STATUS_LABELS[status] || status);
+    const start = parseLocalDate(appt.start_time) || parseLocalDate(appt.end_time);
+    const dateText = start ? formatDateYMD(start) : "--";
+    const timeText = start ? formatHourHM(start) : "--:--";
+    const datetime = escapeHtml(appt.start_time || appt.end_time || "");
+    const title = escapeHtml(appt.title || "(Sin titulo)");
+    const editArgs = [
+      Number(appt.id),
+      JSON.stringify(appt.title || ""),
+      JSON.stringify(appt.description || ""),
+      JSON.stringify(appt.start_time || ""),
+      JSON.stringify(appt.end_time || ""),
+      JSON.stringify(appt.status || DEFAULT_STATUS),
+      appt.client_id == null ? "null" : Number(appt.client_id),
+    ].join(", ");
+
+    return `
+      <div class="appointment-card status-${status}" data-appointment-id="${escapeHtml(appt.id)}">
+        <div class="d-flex align-items-center gap-2 flex-grow-1">
+          <div class="form-check m-0">
+            <input type="checkbox" class="form-check-input appointment-check" value="${escapeHtml(appt.id)}"
+              style="width: 1.1rem; height: 1.1rem; border-color: var(--vet-border); cursor: pointer;">
+          </div>
+          <div class="flex-grow-1 min-width-0">
+            <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
+              <div class="app-title text-truncate fw-bold" title="${title}">${title}</div>
+              <span class="status-badge status-${status}"
+                style="font-size:0.6rem; padding: 0.1rem 0.6rem; border-radius: 20px; white-space: nowrap; flex-shrink: 0;">
+                ${label}
+              </span>
+            </div>
+            <div class="app-time d-flex align-items-center gap-2 opacity-75">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+              <span class="appointment-date small" data-datetime="${datetime}">${dateText}</span>
+              <span class="mx-1">•</span>
+              <span class="appointment-hour small fw-bold" data-datetime="${datetime}">${timeText}</span>
+            </div>
+          </div>
+        </div>
+        <div class="d-flex flex-column gap-1 ms-2">
+          <button class="btn-icon-soft primary" type="button" onclick="openEdit(${editArgs})" title="Editar">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 20h9" />
+              <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+            </svg>
+          </button>
+          <form action="/calendar/${escapeHtml(appt.id)}/delete" method="post" class="m-0">
+            <button class="btn-icon-soft danger" type="submit" title="Eliminar">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 6h18" />
+                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+              </svg>
+            </button>
+          </form>
+        </div>
+      </div>
+    `;
+  };
+
+  const buildSectionHeader = (label) =>
+    `<div class="small text-uppercase fw-bold text-muted mb-2">${label}</div>`;
+
+  const buildEmptyState = (label) =>
+    `<div class="text-center text-muted py-4"><div class="small fw-semibold">${label}</div></div>`;
+
+  let appointmentsRefreshTimer = null;
+  let appointmentsRefreshInFlight = false;
+
+  const refreshAppointmentsPanel = async () => {
+    if (!appointmentsTableBody || appointmentsRefreshInFlight) return;
+    appointmentsRefreshInFlight = true;
+    try {
+      const res = await fetch(getAppointmentsApiBase(), {
+        headers: { Accept: "application/json" },
+        cache: "no-store",
+      });
+      const data = await res.json().catch(() => []);
+      if (!res.ok) return;
+      const items = Array.isArray(data) ? data : [];
+      const nowTs = Date.now();
+      const withDates = items.map((appt) => {
+        const start = parseLocalDate(appt.start_time);
+        const end = parseLocalDate(appt.end_time);
+        const startTs = start ? start.getTime() : null;
+        const endTs = end ? end.getTime() : null;
+        const bestTs = Math.max(startTs ?? -Infinity, endTs ?? -Infinity);
+        return { ...appt, startTs, endTs, bestTs };
+      });
+      const upcoming = withDates
+        .filter((appt) => Number.isFinite(appt.bestTs) && appt.bestTs >= nowTs)
+        .sort((a, b) => (a.startTs ?? a.bestTs) - (b.startTs ?? b.bestTs));
+      const past = withDates
+        .filter((appt) => !Number.isFinite(appt.bestTs) || appt.bestTs < nowTs)
+        .sort((a, b) => (b.startTs ?? b.bestTs) - (a.startTs ?? a.bestTs));
+
+      const upcomingLimited = upcoming.slice(0, 5);
+      const pastLimited = past.slice(0, 2);
+
+      const upcomingHtml = upcomingLimited.length
+        ? upcomingLimited.map(buildAppointmentCard).join("")
+        : buildEmptyState("Sin citas proximas");
+      const pastHtml = pastLimited.length
+        ? pastLimited.map(buildAppointmentCard).join("")
+        : buildEmptyState("Sin citas pasadas");
+
+      appointmentsTableBody.innerHTML = `
+        ${buildSectionHeader("Citas proximas")}
+        ${upcomingHtml}
+        <hr class="my-3">
+        ${buildSectionHeader("Citas pasadas")}
+        ${pastHtml}
+      `;
+
+      updateBulkState();
+    } catch (err) {
+      console.warn("No se pudo refrescar citas", err);
+    } finally {
+      appointmentsRefreshInFlight = false;
+    }
+  };
+
+  const startAppointmentsAutoRefresh = () => {
+    if (!appointmentsTableBody || appointmentsRefreshTimer) return;
+    refreshAppointmentsPanel();
+    appointmentsRefreshTimer = setInterval(refreshAppointmentsPanel, 20000);
+  };
 
   const SLOT_MINUTES = 30;
   const ROW_HEIGHT = 32;
@@ -1411,8 +1565,9 @@
       status: evData.status || DEFAULT_STATUS,
     };
     try {
-      const res = await fetch(`/api/calendar/${eventId}`, {
+      const res = await fetch(`${getApiBase()}/${eventId}`, {
         method: "PUT",
+        credentials: "include",
         headers: { "Content-Type": "application/json", "X-Timezone": clientTimeZone },
         body: JSON.stringify(payload),
       });
@@ -1599,7 +1754,11 @@
 
   async function deleteEvent(id) {
     try {
-      const res = await fetch(`${getApiBase()}/${id}`, { method: "DELETE", headers: { "X-Timezone": clientTimeZone } });
+      const res = await fetch(`${getApiBase()}/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+        headers: { "X-Timezone": clientTimeZone },
+      });
       if (!res.ok) return false;
       const idx = events.findIndex((ev) => `${ev.id}` === `${id}`);
       if (idx >= 0) events.splice(idx, 1);
@@ -1715,6 +1874,7 @@
     try {
       const res = await fetch(`${getApiBase()}/${currentEventId}`, {
         method: "PUT",
+        credentials: "include",
         headers: { "Content-Type": "application/json", "X-Timezone": clientTimeZone },
         body: JSON.stringify(payload),
       });
@@ -1801,6 +1961,11 @@
       alert("Completa inicio y duracion");
       return;
     }
+    const submitBtn = document.getElementById("createEventSubmit");
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.classList.add("btn-loading");
+    }
     const endVal = new Date(startVal.getTime() + durationMinutes * 60000);
     const payload = {
       title,
@@ -1816,7 +1981,12 @@
       if (Number.isFinite(parsed)) payload.client_id = parsed;
     }
     try {
-      const res = await fetch(getApiBase(), { method: "POST", headers: { "Content-Type": "application/json", "X-Timezone": clientTimeZone }, body: JSON.stringify(payload) });
+      const res = await fetch(getApiBase(), {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json", "X-Timezone": clientTimeZone },
+        body: JSON.stringify(payload),
+      });
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
         createEventModal.hide();
@@ -1835,6 +2005,11 @@
       } else alert(`No se pudo crear la cita: ${data.error || res.statusText}`);
     } catch {
       alert("Error creando la cita");
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.classList.remove("btn-loading");
+      }
     }
   });
 
@@ -2079,13 +2254,21 @@
     }
   });
 
+  window.addEventListener('vetflow:calendarChanged', () => {
+    refreshAppointmentsPanel();
+  });
+
   // Expose for inline usage
   window.deleteEvent = deleteEvent;
 
   // Initialize bulk listeners if not already attached (redundant check if script runs late, but safe)
   if (document.readyState !== 'loading') {
     updateBulkState();
+    startAppointmentsAutoRefresh();
   } else {
-    document.addEventListener('DOMContentLoaded', updateBulkState);
+    document.addEventListener('DOMContentLoaded', () => {
+      updateBulkState();
+      startAppointmentsAutoRefresh();
+    });
   }
 })();

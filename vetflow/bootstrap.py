@@ -78,10 +78,15 @@ def _core_sql_statements():
             email TEXT NOT NULL,
             invite_code TEXT NOT NULL UNIQUE,
             invited_by UUID REFERENCES app_users(id),
+            role TEXT NOT NULL DEFAULT 'member' REFERENCES workspace_membership_roles(role),
             expires_at TIMESTAMPTZ,
             accepted_at TIMESTAMPTZ,
             created_at TIMESTAMPTZ DEFAULT NOW()
         );
+        """,
+        """
+        ALTER TABLE IF EXISTS workspace_invites
+        ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'member' REFERENCES workspace_membership_roles(role);
         """,
         f"""
         CREATE OR REPLACE FUNCTION {schema}.ensure_workspace_schema(p_schema TEXT)

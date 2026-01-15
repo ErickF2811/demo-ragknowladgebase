@@ -515,12 +515,20 @@ def update_workspace(
     return updated
 
 
+def _normalize_invite_role(raw: Optional[str]) -> str:
+    value = (raw or "member").strip().lower()
+    if value not in ("member", "admin"):
+        raise ValueError("rol_invalido")
+    return value
+
+
 def create_invite(
     workspace_id: str,
     email: str,
     invited_by_email: Optional[str] = None,
     invited_by_name: Optional[str] = None,
     expires_in_days: Optional[int] = None,
+    role: Optional[str] = None,
 ) -> Dict:
     """
     Crea una invitacion (con codigo unico) para un workspace concreto.
@@ -529,6 +537,7 @@ def create_invite(
     """
     normalized_email = _normalize_email(email)
     ensure_core_bootstrap()
+    target_role = _normalize_invite_role(role)
 
     inviter_id = None
     if invited_by_email:
@@ -558,7 +567,7 @@ def create_invite(
         now = datetime.now(timezone.utc)
         existing = conn.execute(
             """
-            SELECT id::text, workspace_id::text, email, invite_code, expires_at, accepted_at, created_at
+            SELECT id::text, workspace_id::text, email, invite_code, role, expires_at, accepted_at, created_at
             FROM workspace_invites
             WHERE workspace_id = %s
               AND email = %s
@@ -577,12 +586,12 @@ def create_invite(
             invite_code = secrets.token_urlsafe(6)
             row = conn.execute(
                 """
-                INSERT INTO workspace_invites (workspace_id, email, invite_code, invited_by, expires_at)
-                VALUES (%s, %s, %s, %s, %s)
+                INSERT INTO workspace_invites (workspace_id, email, invite_code, invited_by, role, expires_at)
+                VALUES (%s, %s, %s, %s, %s, %s)
                 ON CONFLICT (invite_code) DO NOTHING
-                RETURNING id::text, workspace_id::text, email, invite_code, expires_at, accepted_at, created_at
+                RETURNING id::text, workspace_id::text, email, invite_code, role, expires_at, accepted_at, created_at
                 """,
-                (workspace_id, normalized_email, invite_code, inviter_id, expires_at),
+                (workspace_id, normalized_email, invite_code, inviter_id, target_role, expires_at),
             ).fetchone()
             if row:
                 return dict(row)
@@ -610,6 +619,7 @@ def accept_invite(invite_code: str, email: str, display_name: Optional[str] = No
                 wi.workspace_id::text,
                 wi.email,
                 wi.invite_code,
+                wi.role,
                 wi.expires_at,
                 wi.accepted_at,
                 wi.created_at,
@@ -645,14 +655,16 @@ def accept_invite(invite_code: str, email: str, display_name: Optional[str] = No
             (invite_row["workspace_id"], user["id"]),
         ).fetchone()
 
+        member_role = _normalize_invite_role(invite_row.get("role"))
+
         if not member_exists:
             conn.execute(
                 """
                 INSERT INTO workspace_members (workspace_id, user_id, role)
-                VALUES (%s, %s, 'member')
+                VALUES (%s, %s, %s)
                 ON CONFLICT (workspace_id, user_id) DO NOTHING
                 """,
-                (invite_row["workspace_id"], user["id"]),
+                (invite_row["workspace_id"], user["id"], member_role),
             )
 
         updated_invite = conn.execute(
@@ -660,7 +672,7 @@ def accept_invite(invite_code: str, email: str, display_name: Optional[str] = No
             UPDATE workspace_invites
             SET accepted_at = %s
             WHERE id = %s
-            RETURNING id::text, workspace_id::text, email, invite_code, expires_at, accepted_at, created_at
+            RETURNING id::text, workspace_id::text, email, invite_code, role, expires_at, accepted_at, created_at
             """,
             (now, invite_row["id"]),
         ).fetchone()

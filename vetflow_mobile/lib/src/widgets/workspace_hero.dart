@@ -7,11 +7,13 @@ class HeroStat {
   final String label;
   final String value;
   final IconData icon;
+  final VoidCallback? onTap;
 
   const HeroStat({
     required this.label,
     required this.value,
     required this.icon,
+    this.onTap,
   });
 }
 
@@ -262,37 +264,47 @@ class _HeroStatChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.16),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(stat.icon, size: 18, color: Colors.white),
-          const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                stat.value,
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                    ),
-              ),
-              Text(
-                stat.label,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: Colors.white.withValues(alpha: 0.85),
-                    ),
-              ),
-            ],
+    final radius = BorderRadius.circular(16);
+    final content = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(stat.icon, size: 18, color: Colors.white),
+        const SizedBox(width: 8),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              stat.value,
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+            Text(
+              stat.label,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: Colors.white.withValues(alpha: 0.85),
+                  ),
+            ),
+          ],
+        ),
+      ],
+    );
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: stat.onTap,
+        borderRadius: radius,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.16),
+            borderRadius: radius,
+            border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
           ),
-        ],
+          child: content,
+        ),
       ),
     );
   }

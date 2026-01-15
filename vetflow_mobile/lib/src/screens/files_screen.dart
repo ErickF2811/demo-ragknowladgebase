@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../app_scope.dart';
 import '../api/api_client.dart';
@@ -76,12 +77,20 @@ class _FilesScreenState extends State<FilesScreen> {
   }
   Future<List<FileItem>> _loadFiles(ApiClient api) async {
     final items = await api.fetchFiles();
+    const hiddenStatuses = {'expired', 'expirada', 'expirado', 'deleted', 'eliminado', 'eliminar'};
+    final filtered = items.where((f) {
+      final st = (f.status ?? '').toLowerCase();
+      if (hiddenStatuses.contains(st)) return false;
+      if (st.contains('expir')) return false;
+      if (st.contains('elimin') || st.contains('delete')) return false;
+      return true;
+    }).toList();
     if (mounted) {
       setState(() {
         _lastSync = DateTime.now();
       });
     }
-    return items;
+    return filtered;
   }
 
   Future<void> _refresh() async {
@@ -154,6 +163,7 @@ class _FilesScreenState extends State<FilesScreen> {
               final status = item.status ?? 'uploaded';
               content.add(
                 VetflowCard(
+                  onTap: () => _openFile(item),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -161,11 +171,23 @@ class _FilesScreenState extends State<FilesScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(item.filename, style: Theme.of(context).textTheme.titleMedium),
+                            Text(
+                              item.filename,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(color: Theme.of(context).colorScheme.onSurface),
+                            ),
                             const SizedBox(height: 6),
-                            Text('${item.folder ?? 'root'} • $createdAt'),
+                            Text(
+                              '${item.folder ?? 'root'} - $createdAt',
+                              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                            ),
                             const SizedBox(height: 4),
-                            Text(tags),
+                            Text(
+                              tags,
+                              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                            ),
                           ],
                         ),
                       ),
@@ -195,12 +217,44 @@ class _FilesScreenState extends State<FilesScreen> {
     );
   }
 
+  Future<void> _openFile(FileItem item) async {
+    final api = _api;
+    if (api == null) return;
+    final candidateUrl = (item.blobUrl ?? '').trim();
+    String? url = candidateUrl.isNotEmpty ? candidateUrl : null;
+
+    url ??= await api.fetchFileSas(item.id);
+    if (url == null || url.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No se pudo obtener el enlace del archivo')),
+        );
+      }
+      return;
+    }
+    final uri = Uri.tryParse(url);
+    if (uri == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('URL invalida')),
+        );
+      }
+      return;
+    }
+    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudo abrir el enlace')),
+      );
+    }
+  }
+
   Widget _buildHeader(List<FileItem> items) {
     final workspaceFuture = _workspaceFuture;
     if (workspaceFuture == null) {
       return WorkspaceHero(
         stats: [
-          HeroStat(label: 'Archivos', value: '${items.length}', icon: Icons.folder),
+          HeroStat(label: 'Archivos', value: '${items.length}', icon: Icons.folder, onTap: _refresh),
         ],
         lastSync: _lastSync,
         onRefresh: _refresh,
@@ -213,7 +267,7 @@ class _FilesScreenState extends State<FilesScreen> {
       builder: (context, snapshot) {
         final workspace = snapshot.data;
         final stats = [
-          HeroStat(label: 'Archivos', value: '${items.length}', icon: Icons.folder),
+          HeroStat(label: 'Archivos', value: '${items.length}', icon: Icons.folder, onTap: _refresh),
           HeroStat(
             label: 'Citas',
             value: '${workspace?.appointmentsCount ?? '--'}',

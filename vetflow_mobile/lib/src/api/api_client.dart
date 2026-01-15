@@ -43,6 +43,19 @@ class ApiClient {
     return '${value.substring(0, limit)}...';
   }
 
+  String _currentSchema() {
+    final provider = schemaProvider;
+    final schema = provider == null ? null : provider().trim();
+    if (schema != null && schema.isNotEmpty) {
+      return schema;
+    }
+    final fallback = config.schema.trim();
+    if (fallback.isNotEmpty) {
+      return fallback;
+    }
+    throw StateError('Workspace schema missing for API request.');
+  }
+
   Map<String, String> _headers({bool json = true}) {
     final headers = <String, String>{};
     if (json) {
@@ -77,6 +90,13 @@ class ApiClient {
     final trimmed = path.startsWith('/') ? path.substring(1) : path;
     final url = '${config.normalizedBaseUrl}/$trimmed';
     return Uri.parse(url).replace(queryParameters: queryParameters);
+  }
+
+  Uri _buildWorkspaceRootUri(String path, [Map<String, String>? queryParameters]) {
+    final schema = _currentSchema();
+    final trimmed = path.startsWith('/') ? path.substring(1) : path;
+    final full = 'w/$schema/$trimmed';
+    return _buildRootUri(full, queryParameters);
   }
 
   Future<dynamic> _getJson(Uri uri) async {
@@ -123,6 +143,23 @@ class ApiClient {
     throw const FormatException('Unexpected response for calendar list.');
   }
 
+  Future<Appointment> updateAppointment(int id, Map<String, dynamic> payload) async {
+    final uri = _buildApiUri('calendar/$id');
+    final jsonBody = jsonEncode(payload);
+    _log('PUT $uri body=${_truncate(jsonBody)}');
+    final res = await _client.put(uri, headers: _headers(), body: jsonBody);
+    final body = utf8.decode(res.bodyBytes);
+    _log('PUT $uri -> ${res.statusCode}');
+    final data = body.isEmpty ? null : jsonDecode(body);
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw ApiException(res.statusCode, body.isEmpty ? 'Request failed' : body);
+    }
+    if (data is Map<String, dynamic>) {
+      return Appointment.fromJson(data);
+    }
+    throw const FormatException('Unexpected response for appointment update.');
+  }
+
   Future<List<Client>> fetchClients({int limit = 200, String? query}) async {
     final queryParams = <String, String>{'limit': '$limit'};
     if (query != null && query.isNotEmpty) {
@@ -140,6 +177,23 @@ class ApiClient {
       return const <Client>[];
     }
     throw const FormatException('Unexpected response for client list.');
+  }
+
+  Future<Client> updateClient(int id, Map<String, dynamic> payload) async {
+    final uri = _buildApiUri('clientes/$id');
+    final jsonBody = jsonEncode(payload);
+    _log('PUT $uri body=${_truncate(jsonBody)}');
+    final res = await _client.put(uri, headers: _headers(), body: jsonBody);
+    final body = utf8.decode(res.bodyBytes);
+    _log('PUT $uri -> ${res.statusCode}');
+    final data = body.isEmpty ? null : jsonDecode(body);
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw ApiException(res.statusCode, body.isEmpty ? 'Request failed' : body);
+    }
+    if (data is Map<String, dynamic>) {
+      return Client.fromJson(data['client'] as Map<String, dynamic>? ?? data);
+    }
+    throw const FormatException('Unexpected response for client update.');
   }
 
   Future<List<FileItem>> fetchFiles({bool includeExpired = false}) async {
@@ -160,6 +214,16 @@ class ApiClient {
       return const <FileItem>[];
     }
     throw const FormatException('Unexpected response for file list.');
+  }
+
+  Future<String?> fetchFileSas(int fileId) async {
+    final uri = _buildWorkspaceRootUri('file/$fileId/sas');
+    final data = await _getJson(uri);
+    if (data is Map<String, dynamic>) {
+      final url = data['url'];
+      if (url is String && url.isNotEmpty) return url;
+    }
+    return null;
   }
 
   Future<Workspace> fetchWorkspace() async {

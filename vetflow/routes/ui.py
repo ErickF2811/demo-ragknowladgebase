@@ -456,6 +456,7 @@ def create_invite_api(slug: str):
 
     payload = request.get_json(silent=True) or {}
     email = (payload.get("email") or "").strip().lower()
+    role_raw = payload.get("role")
     expires_raw = payload.get("expires_in_days")
     expires_in_days = None
     if expires_raw is not None and expires_raw != "":
@@ -467,6 +468,9 @@ def create_invite_api(slug: str):
             expires_in_days = None
 
     inviter_email, inviter_name = _resolve_current_user()
+    actor_role = get_member_role(workspace["id"], inviter_email) if inviter_email else None
+    if actor_role not in ("owner", "admin"):
+        return jsonify({"error": "forbidden"}), 403
 
     if not email:
         return jsonify({"error": "email_requerido"}), 400
@@ -478,6 +482,7 @@ def create_invite_api(slug: str):
             invited_by_email=inviter_email,
             invited_by_name=inviter_name,
             expires_in_days=expires_in_days,
+            role=role_raw,
         )
         return (
             jsonify(

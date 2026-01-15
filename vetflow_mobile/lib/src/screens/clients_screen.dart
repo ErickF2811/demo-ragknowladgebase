@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../app_scope.dart';
 import '../api/api_client.dart';
@@ -148,9 +149,10 @@ class _ClientsScreenState extends State<ClientsScreen> {
                 '${item.idType}: ${item.idNumber}',
                 if (item.phone != null && item.phone!.isNotEmpty) item.phone!,
                 if (item.email != null && item.email!.isNotEmpty) item.email!,
-              ].join(' • ');
+              ].where((v) => v.isNotEmpty).join(' - ');
               content.add(
                 VetflowCard(
+                  onTap: () => _showClientDetail(item),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -158,9 +160,18 @@ class _ClientsScreenState extends State<ClientsScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(item.fullName, style: Theme.of(context).textTheme.titleMedium),
+                            Text(
+                              item.fullName,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(color: Theme.of(context).colorScheme.onSurface),
+                            ),
                             const SizedBox(height: 6),
-                            Text(subtitle),
+                            Text(
+                              subtitle,
+                              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                            ),
                           ],
                         ),
                       ),
@@ -199,7 +210,7 @@ class _ClientsScreenState extends State<ClientsScreen> {
     if (workspaceFuture == null) {
       return WorkspaceHero(
         stats: [
-          HeroStat(label: 'Clientes', value: '${items.length}', icon: Icons.people_alt),
+          HeroStat(label: 'Clientes', value: '${items.length}', icon: Icons.people_alt, onTap: _refresh),
         ],
         lastSync: _lastSync,
         onRefresh: _refresh,
@@ -212,11 +223,12 @@ class _ClientsScreenState extends State<ClientsScreen> {
       builder: (context, snapshot) {
         final workspace = snapshot.data;
         final stats = [
-          HeroStat(label: 'Clientes', value: '${items.length}', icon: Icons.people_alt),
+          HeroStat(label: 'Clientes', value: '${items.length}', icon: Icons.people_alt, onTap: _refresh),
           HeroStat(
             label: 'Citas',
             value: '${workspace?.appointmentsCount ?? '--'}',
             icon: Icons.event,
+            onTap: _refresh,
           ),
         ];
         return WorkspaceHero(
@@ -231,4 +243,157 @@ class _ClientsScreenState extends State<ClientsScreen> {
       },
     );
   }
+
+  void _showClientDetail(Client client) {
+    final nameCtrl = TextEditingController(text: client.fullName);
+    final idTypeCtrl = TextEditingController(text: client.idType);
+    final idNumberCtrl = TextEditingController(text: client.idNumber);
+    final phoneCtrl = TextEditingController(text: client.phone ?? '');
+    final emailCtrl = TextEditingController(text: client.email ?? '');
+    final addressCtrl = TextEditingController(text: client.address ?? '');
+    final notesCtrl = TextEditingController(text: client.notes ?? '');
+    bool saving = false;
+    String? error;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (ctx) {
+        return StatefulBuilder(builder: (ctx, setModalState) {
+          final share = () {
+            final buffer = StringBuffer()
+              ..writeln(client.fullName)
+              ..writeln('${client.idType}: ${client.idNumber}');
+            if (client.phone != null && client.phone!.isNotEmpty) {
+              buffer.writeln('Tel: ${client.phone}');
+            }
+            if (client.email != null && client.email!.isNotEmpty) {
+              buffer.writeln('Email: ${client.email}');
+            }
+            if (client.address != null && client.address!.isNotEmpty) {
+              buffer.writeln('Direccion: ${client.address}');
+            }
+            Share.share(buffer.toString());
+          };
+
+          final save = () async {
+            final api = _api;
+            if (api == null) return;
+            final name = nameCtrl.text.trim();
+            final idType = idTypeCtrl.text.trim();
+            final idNumber = idNumberCtrl.text.trim();
+            if (name.isEmpty || idType.isEmpty || idNumber.isEmpty) {
+              setModalState(() {
+                error = 'Nombre, tipo de ID y numero son obligatorios';
+              });
+              return;
+            }
+            setModalState(() {
+              saving = true;
+              error = null;
+            });
+            try {
+              await api.updateClient(client.id, {
+                'full_name': name,
+                'id_type': idType,
+                'id_number': idNumber,
+                'phone': phoneCtrl.text.trim(),
+                'email': emailCtrl.text.trim(),
+                'address': addressCtrl.text.trim(),
+                'notes': notesCtrl.text.trim(),
+              });
+              await _refresh();
+              if (mounted) Navigator.of(ctx).pop();
+            } catch (e) {
+              setModalState(() {
+                error = e.toString();
+              });
+            } finally {
+              setModalState(() {
+                saving = false;
+              });
+            }
+          };
+
+          return Padding(
+            padding: EdgeInsets.only(
+              left: 16,
+              right: 16,
+              top: 12,
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          client.fullName,
+                          style: Theme.of(ctx).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.share),
+                        tooltip: 'Compartir',
+                        onPressed: share,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: nameCtrl,
+                    decoration: const InputDecoration(labelText: 'Nombre'),
+                  ),
+                  TextField(
+                    controller: idTypeCtrl,
+                    decoration: const InputDecoration(labelText: 'Tipo de ID (cedula/pasaporte)'),
+                  ),
+                  TextField(
+                    controller: idNumberCtrl,
+                    decoration: const InputDecoration(labelText: 'Numero de ID'),
+                  ),
+                  TextField(
+                    controller: phoneCtrl,
+                    decoration: const InputDecoration(labelText: 'Telefono'),
+                  ),
+                  TextField(
+                    controller: emailCtrl,
+                    decoration: const InputDecoration(labelText: 'Email'),
+                  ),
+                  TextField(
+                    controller: addressCtrl,
+                    decoration: const InputDecoration(labelText: 'Direccion'),
+                  ),
+                  TextField(
+                    controller: notesCtrl,
+                    decoration: const InputDecoration(labelText: 'Notas'),
+                    maxLines: 2,
+                  ),
+                  if (error != null) ...[
+                    const SizedBox(height: 8),
+                    Text(error!, style: const TextStyle(color: Colors.red)),
+                  ],
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: saving ? null : save,
+                      child: saving
+                          ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                          : const Text('Guardar'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        });
+      },
+    );
+  }
 }
+
