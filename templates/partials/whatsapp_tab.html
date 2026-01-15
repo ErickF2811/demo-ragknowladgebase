@@ -63,6 +63,43 @@
           <div class="small" id="whatsappStatus" aria-live="polite"></div>
           <div class="small text-muted mt-2" id="whatsappDetails" style="display:none;"></div>
           <div class="small text-muted mt-2" id="whatsappLastCheck" style="display:none;"></div>
+
+          <div class="mt-4">
+            <div class="small text-muted mb-2">Asistencia humana (miembros)</div>
+            <div class="p-3 rounded-4 border bg-light-subtle">
+              {% if workspace_members and workspace_members|length %}
+              <div class="d-flex flex-column gap-2">
+                {% for m in workspace_members %}
+                {% set phone_value = m.phone or '' %}
+                {% set phone_parts = phone_value.split(' ', 1) %}
+                {% set phone_code = phone_parts[0] if phone_parts|length > 0 and phone_parts[0].startswith('+') else '' %}
+                {% set phone_number = phone_parts[1] if phone_code and phone_parts|length > 1 else (phone_value if not phone_code else '') %}
+                <div class="d-flex flex-wrap align-items-center gap-2 justify-content-between">
+                  <div>
+                    <div class="fw-semibold">{{ m.display_name or m.email }}</div>
+                    <div class="small text-muted">{{ m.email }}</div>
+                  </div>
+                  <div class="d-flex gap-2 align-items-center">
+                    <input type="tel" class="form-control form-control-sm" style="width: 90px;"
+                      placeholder="+57" value="{{ phone_code }}"
+                      data-member-phone-code data-member-email="{{ m.email }}">
+                    <input type="tel" class="form-control form-control-sm" style="min-width: 160px;"
+                      placeholder="300 123 4567" value="{{ phone_number }}"
+                      data-member-phone-number data-member-email="{{ m.email }}">
+                    <button class="btn btn-sm btn-primary" type="button" data-save-member-phone
+                      data-member-email="{{ m.email }}">
+                      Guardar
+                    </button>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+              {% else %}
+              <div class="text-muted small">No hay miembros en este workspace.</div>
+              {% endif %}
+              <div class="small text-muted mt-2" id="humanSupportStatus" aria-live="polite"></div>
+            </div>
+          </div>
         </div>
 
         <div class="col-lg-6">

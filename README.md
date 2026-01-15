@@ -562,3 +562,69 @@ docker run -p 5000:5000 --env-file .env miusuario/vetflow-panel:latest
 
 #### 3. Estabilidad Visual
 - **Prevención de "Flicker":** Se implementó una clase de utilidad (`opacity-0` + `transition`) para ocultar las horas en formato UTC crudo hasta que el JavaScript las hidrata exitosamente a la hora local del usuario, evitando destellos de información incorrecta.
+
+## Diagrama UML (schema core `rag_panel.vetflow_core`)
+```mermaid
+classDiagram
+    class app_users {
+        uuid id
+        text email
+        text display_name
+        text clerk_id
+        text avatar_url
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    class workspaces {
+        uuid id
+        text name
+        text slug
+        text schema_name
+        text description
+        text theme_color
+        text icon_url
+        uuid owner_id
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    class workspace_members {
+        uuid workspace_id
+        uuid user_id
+        text role
+        text phone
+        timestamptz joined_at
+    }
+
+    class workspace_invites {
+        uuid id
+        uuid workspace_id
+        text email
+        text invite_code
+        text role
+        uuid invited_by
+        timestamptz expires_at
+        timestamptz accepted_at
+        timestamptz created_at
+    }
+
+    class workspace_membership_roles {
+        text role
+        text description
+    }
+
+    class ensure_workspace_schema {
+        <<function>>
+        schema_name
+    }
+
+    app_users "1" --> "many" workspaces : owner_id
+    workspaces "1" --> "many" workspace_members : workspace_id
+    app_users "1" --> "many" workspace_members : user_id
+    workspaces "1" --> "many" workspace_invites : workspace_id
+    app_users "1" --> "many" workspace_invites : invited_by
+    workspace_membership_roles "1" --> "many" workspace_members : role
+    workspace_membership_roles "1" --> "many" workspace_invites : role
+    workspaces ..> ensure_workspace_schema : provisiona schema
+```

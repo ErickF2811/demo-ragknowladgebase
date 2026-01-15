@@ -46,6 +46,17 @@
     details.style.display = 'block'
   }
 
+  const setHumanStatus = (text, type) => {
+    const el = document.getElementById('humanSupportStatus')
+    if (!el) return
+    el.textContent = text || ''
+    el.classList.remove('text-muted', 'text-danger', 'text-success')
+    if (!text) return
+    if (type === 'error') el.classList.add('text-danger')
+    else if (type === 'success') el.classList.add('text-success')
+    else el.classList.add('text-muted')
+  }
+
   const setLastCheck = (text) => {
     const { lastCheck } = getEls()
     if (!lastCheck) return
@@ -370,6 +381,68 @@
         setLogoutError(message)
       } finally {
         logoutConfirmBtn.disabled = false
+      }
+    })
+
+    const escapeAttr = (value) => {
+      if (window.CSS && typeof window.CSS.escape === 'function') return window.CSS.escape(value)
+      return String(value).replace(/["\\]/g, '\\$&')
+    }
+
+    const parsePhone = (value) => {
+      const text = String(value || '').trim()
+      if (!text) return { code: '', number: '' }
+      if (text.startsWith('+')) {
+        const parts = text.split(/\s+/, 2)
+        if (parts.length > 1) return { code: parts[0], number: parts[1] }
+        return { code: parts[0], number: '' }
+      }
+      return { code: '', number: text }
+    }
+
+    const panel = getEls().panel
+    panel?.addEventListener('click', async (event) => {
+      const button = event.target.closest('[data-save-member-phone]')
+      if (!button) return
+      const slug = panel.getAttribute('data-workspace-slug')
+      const email = (button.getAttribute('data-member-email') || '').trim()
+      if (!slug || !email) {
+        setHumanStatus('Selecciona un workspace y miembro valido.', 'error')
+        return
+      }
+      const codeInput = panel.querySelector(
+        `[data-member-phone-code][data-member-email="${escapeAttr(email)}"]`
+      )
+      const numberInput = panel.querySelector(
+        `[data-member-phone-number][data-member-email="${escapeAttr(email)}"]`
+      )
+      const rawCode = (codeInput?.value || '').trim()
+      const rawNumber = (numberInput?.value || '').trim()
+      const normalizedCode = rawCode ? (rawCode.startsWith('+') ? rawCode : `+${rawCode}`) : ''
+      const phone = normalizedCode && rawNumber ? `${normalizedCode} ${rawNumber}` : rawNumber || normalizedCode
+      button.disabled = true
+      setHumanStatus('Guardando telefono...', null)
+      try {
+        const res = await fetch(`/w/${encodeURIComponent(slug)}/api/members/phone`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+          body: JSON.stringify({ email, phone }),
+        })
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok || data.error) {
+          throw new Error(data.error || `Error ${res.status}`)
+        }
+        const parsed = parsePhone(data?.member?.phone)
+        if (codeInput) codeInput.value = parsed.code
+        if (numberInput) numberInput.value = parsed.number
+        setHumanStatus('Telefono actualizado.', 'success')
+      } catch (err) {
+        setHumanStatus(err?.message || 'No se pudo guardar el telefono.', 'error')
+      } finally {
+        button.disabled = false
       }
     })
 

@@ -31,6 +31,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<List<Workspace>>? _workspacesFuture;
   DateTime? _lastSync;
   bool _syncing = false;
+  bool _inviting = false;
+  String? _inviteStatus;
+  WorkspaceInvite? _lastInvite;
+  final TextEditingController _inviteEmailController = TextEditingController();
+  final TextEditingController _inviteExpiryController = TextEditingController();
+  String _inviteRole = 'member';
   Timer? _poller;
 
   @override
@@ -65,6 +71,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   void dispose() {
+    _inviteEmailController.dispose();
+    _inviteExpiryController.dispose();
     _poller?.cancel();
     super.dispose();
   }
@@ -148,6 +156,54 @@ class _SettingsScreenState extends State<SettingsScreen> {
       return api.fetchWorkspacesRoot();
     }
     return api.fetchWorkspaces();
+  }
+
+  Future<void> _createInvite() async {
+    final api = _api ?? AppScope.of(context).api;
+    final email = _inviteEmailController.text.trim();
+    if (email.isEmpty) {
+      setState(() {
+        _inviteStatus = 'Ingresa un correo valido.';
+      });
+      return;
+    }
+    int? expiresInDays;
+    final rawDays = _inviteExpiryController.text.trim();
+    if (rawDays.isNotEmpty) {
+      expiresInDays = int.tryParse(rawDays);
+      if (expiresInDays == null) {
+        setState(() {
+          _inviteStatus = 'Dias invalidos.';
+        });
+        return;
+      }
+    }
+    setState(() {
+      _inviting = true;
+      _inviteStatus = null;
+      _lastInvite = null;
+    });
+    try {
+      final invite = await api.createWorkspaceInvite(
+        email: email,
+        role: _inviteRole,
+        expiresInDays: expiresInDays,
+      );
+      setState(() {
+        _lastInvite = invite;
+        _inviteStatus = 'Invitacion creada.';
+      });
+    } catch (error) {
+      setState(() {
+        _inviteStatus = 'No se pudo invitar: $error';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _inviting = false;
+        });
+      }
+    }
   }
 
   @override
@@ -258,6 +314,78 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ],
                   );
                 },
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(18, 12, 18, 4),
+              child: Text('Miembros', style: TextStyle(fontWeight: FontWeight.w700)),
+            ),
+            VetflowCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Invitar nuevo miembro', style: TextStyle(fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: _inviteEmailController,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: const InputDecoration(
+                      labelText: 'Correo del miembro',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: _inviteRole,
+                    items: const [
+                      DropdownMenuItem(value: 'member', child: Text('Miembro')),
+                      DropdownMenuItem(value: 'admin', child: Text('Administrador')),
+                    ],
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() => _inviteRole = value);
+                    },
+                    decoration: const InputDecoration(
+                      labelText: 'Rol',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _inviteExpiryController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Expira en dias (opcional)',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: hasSchema && !_inviting ? _createInvite : null,
+                      icon: const Icon(Icons.person_add),
+                      label: Text(_inviting ? 'Enviando...' : 'Crear invitacion'),
+                    ),
+                  ),
+                  if (_inviteStatus != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      _inviteStatus!,
+                      style: TextStyle(
+                        color: _inviteStatus!.startsWith('Invitacion') ? Colors.green : Colors.red,
+                      ),
+                    ),
+                  ],
+                  if (_lastInvite != null) ...[
+                    const SizedBox(height: 8),
+                    const Text('Codigo de invitacion:'),
+                    SelectableText(
+                      _lastInvite!.inviteCode,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ],
+                ],
               ),
             ),
             if (hasClerk) ...[

@@ -266,4 +266,35 @@ class ApiClient {
     }
     throw const FormatException('Unexpected response for workspaces.');
   }
+
+  Future<WorkspaceInvite> createWorkspaceInvite({
+    required String email,
+    String role = 'member',
+    int? expiresInDays,
+  }) async {
+    final uri = _buildWorkspaceRootUri('api/invites');
+    final payload = <String, dynamic>{
+      'email': email.trim(),
+      'role': role,
+    };
+    if (expiresInDays != null) {
+      payload['expires_in_days'] = expiresInDays;
+    }
+    final jsonBody = jsonEncode(payload);
+    _log('POST $uri body=${_truncate(jsonBody)}');
+    final res = await _client.post(uri, headers: _headers(), body: jsonBody);
+    final body = utf8.decode(res.bodyBytes);
+    _log('POST $uri -> ${res.statusCode}');
+    final data = body.isEmpty ? null : jsonDecode(body);
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw ApiException(res.statusCode, body.isEmpty ? 'Request failed' : body);
+    }
+    if (data is Map<String, dynamic>) {
+      final invite = data['invite'];
+      if (invite is Map<String, dynamic>) {
+        return WorkspaceInvite.fromJson(invite);
+      }
+    }
+    throw const FormatException('Unexpected response for workspace invite.');
+  }
 }

@@ -267,24 +267,49 @@ def list_members(workspace_id: str) -> List[Dict]:
     """
     ensure_core_bootstrap()
     with get_db(schema=config.CORE_SCHEMA) as conn:
-        rows = conn.execute(
-            """
-            SELECT
-                wm.workspace_id::text,
-                wm.role,
-                wm.joined_at,
-                u.id::text AS user_id,
-                u.email,
-                u.display_name,
-                u.avatar_url
-            FROM workspace_members wm
-            JOIN app_users u ON u.id = wm.user_id
-            WHERE wm.workspace_id = %s
-            ORDER BY wm.role = 'owner' DESC, wm.role = 'admin' DESC, u.email ASC
-            """,
-            (workspace_id,),
-        ).fetchall()
-    return [dict(r) for r in rows]
+        try:
+            rows = conn.execute(
+                """
+                SELECT
+                    wm.workspace_id::text,
+                    wm.role,
+                    wm.phone,
+                    wm.joined_at,
+                    u.id::text AS user_id,
+                    u.email,
+                    u.display_name,
+                    u.avatar_url
+                FROM workspace_members wm
+                JOIN app_users u ON u.id = wm.user_id
+                WHERE wm.workspace_id = %s
+                ORDER BY wm.role = 'owner' DESC, wm.role = 'admin' DESC, u.email ASC
+                """,
+                (workspace_id,),
+            ).fetchall()
+            return [dict(r) for r in rows]
+        except errors.UndefinedColumn:
+            conn.rollback()
+            rows = conn.execute(
+                """
+                SELECT
+                    wm.workspace_id::text,
+                    wm.role,
+                    wm.joined_at,
+                    u.id::text AS user_id,
+                    u.email,
+                    u.display_name,
+                    u.avatar_url
+                FROM workspace_members wm
+                JOIN app_users u ON u.id = wm.user_id
+                WHERE wm.workspace_id = %s
+                ORDER BY wm.role = 'owner' DESC, wm.role = 'admin' DESC, u.email ASC
+                """,
+                (workspace_id,),
+            ).fetchall()
+            items = [dict(r) for r in rows]
+            for item in items:
+                item["phone"] = None
+            return items
 
 
 def get_member_role(workspace_id: str, email: str) -> Optional[str]:
@@ -313,24 +338,49 @@ def list_members(workspace_id: str) -> List[Dict]:
     """
     ensure_core_bootstrap()
     with get_db(schema=config.CORE_SCHEMA) as conn:
-        rows = conn.execute(
-            """
-            SELECT
-                wm.workspace_id::text,
-                wm.role,
-                wm.joined_at,
-                u.id::text AS user_id,
-                u.email,
-                u.display_name,
-                u.avatar_url
-            FROM workspace_members wm
-            JOIN app_users u ON u.id = wm.user_id
-            WHERE wm.workspace_id = %s
-            ORDER BY wm.role = 'owner' DESC, wm.role = 'admin' DESC, u.email ASC
-            """,
-            (workspace_id,),
-        ).fetchall()
-    return [dict(r) for r in rows]
+        try:
+            rows = conn.execute(
+                """
+                SELECT
+                    wm.workspace_id::text,
+                    wm.role,
+                    wm.phone,
+                    wm.joined_at,
+                    u.id::text AS user_id,
+                    u.email,
+                    u.display_name,
+                    u.avatar_url
+                FROM workspace_members wm
+                JOIN app_users u ON u.id = wm.user_id
+                WHERE wm.workspace_id = %s
+                ORDER BY wm.role = 'owner' DESC, wm.role = 'admin' DESC, u.email ASC
+                """,
+                (workspace_id,),
+            ).fetchall()
+            return [dict(r) for r in rows]
+        except errors.UndefinedColumn:
+            conn.rollback()
+            rows = conn.execute(
+                """
+                SELECT
+                    wm.workspace_id::text,
+                    wm.role,
+                    wm.joined_at,
+                    u.id::text AS user_id,
+                    u.email,
+                    u.display_name,
+                    u.avatar_url
+                FROM workspace_members wm
+                JOIN app_users u ON u.id = wm.user_id
+                WHERE wm.workspace_id = %s
+                ORDER BY wm.role = 'owner' DESC, wm.role = 'admin' DESC, u.email ASC
+                """,
+                (workspace_id,),
+            ).fetchall()
+            items = [dict(r) for r in rows]
+            for item in items:
+                item["phone"] = None
+            return items
 
 
 def get_member_role(workspace_id: str, email: str) -> Optional[str]:
@@ -804,6 +854,77 @@ def remove_member(workspace_id: str, target_email: str, acting_email: str) -> Di
         )
 
     return dict(target_row)
+
+
+def update_member_phone(workspace_id: str, target_email: str, phone: Optional[str], acting_email: str) -> Dict:
+    """
+    Actualiza el telefono de un miembro del workspace.
+    Solo owner/admin pueden hacerlo.
+    """
+    ensure_core_bootstrap()
+    if not acting_email:
+        raise PermissionError("acting_email_requerido")
+    if not target_email:
+        raise ValueError("email_requerido")
+
+    normalized_target = _normalize_email(target_email)
+    normalized_actor = _normalize_email(acting_email)
+    cleaned_phone = (phone or "").strip() or None
+
+    with get_db(schema=config.CORE_SCHEMA) as conn:
+        actor_row = conn.execute(
+            """
+            SELECT wm.role
+            FROM workspace_members wm
+            JOIN app_users u ON u.id = wm.user_id
+            WHERE wm.workspace_id = %s AND u.email = %s
+            """,
+            (workspace_id, normalized_actor),
+        ).fetchone()
+        if not actor_row or actor_row["role"] not in ("owner", "admin"):
+            raise PermissionError("solo_owner_admin")
+
+        target_row = conn.execute(
+            """
+            SELECT wm.role, wm.user_id::text, u.email, u.display_name
+            FROM workspace_members wm
+            JOIN app_users u ON u.id = wm.user_id
+            WHERE wm.workspace_id = %s AND u.email = %s
+            """,
+            (workspace_id, normalized_target),
+        ).fetchone()
+        if not target_row:
+            raise LookupError("miembro_no_encontrado")
+
+        try:
+            updated = conn.execute(
+                """
+                UPDATE workspace_members
+                SET phone = %s
+                WHERE workspace_id = %s AND user_id = %s
+                RETURNING workspace_id::text AS workspace_id, phone
+                """,
+                (cleaned_phone, workspace_id, target_row["user_id"]),
+            ).fetchone()
+        except errors.UndefinedColumn:
+            conn.rollback()
+            conn.execute("ALTER TABLE workspace_members ADD COLUMN IF NOT EXISTS phone TEXT")
+            updated = conn.execute(
+                """
+                UPDATE workspace_members
+                SET phone = %s
+                WHERE workspace_id = %s AND user_id = %s
+                RETURNING workspace_id::text AS workspace_id, phone
+                """,
+                (cleaned_phone, workspace_id, target_row["user_id"]),
+            ).fetchone()
+
+    return {
+        "email": target_row["email"],
+        "display_name": target_row.get("display_name"),
+        "phone": updated["phone"] if updated else cleaned_phone,
+        "role": target_row.get("role"),
+    }
 
 
 def update_workspace(workspace_id: str, name: str = None, description: str = None, theme_color: str = None, icon_url: str = None):

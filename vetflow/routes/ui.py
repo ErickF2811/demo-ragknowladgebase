@@ -39,6 +39,7 @@ from ..services.workspaces import (
     create_invite,
     accept_invite,
     remove_member,
+    update_member_phone,
 )
 
 
@@ -627,3 +628,30 @@ def remove_member_api(slug: str):
         return jsonify({"error": str(ex)}), 400
     except Exception as ex:
         return jsonify({"error": f"no_se_puede_remover: {ex}"}), 500
+
+
+@ui_bp.route("/w/<slug>/api/members/phone", methods=["POST"])
+def update_member_phone_api(slug: str):
+    try:
+        require_authenticated_request()
+    except AuthError as ex:
+        return jsonify({"error": ex.code, "message": str(ex)}), ex.status_code
+    workspace = ensure_workspace_from_slug(slug)
+    if not workspace:
+        return jsonify({"error": "workspace_not_found"}), 404
+
+    payload = request.get_json(silent=True) or {}
+    target_email = (payload.get("email") or "").strip()
+    phone = (payload.get("phone") or "").strip()
+    acting_email, _ = _resolve_current_user()
+    try:
+        updated = update_member_phone(workspace["id"], target_email, phone, acting_email)
+        return jsonify({"member": updated})
+    except PermissionError as ex:
+        return jsonify({"error": str(ex)}), 403
+    except LookupError as ex:
+        return jsonify({"error": str(ex)}), 404
+    except ValueError as ex:
+        return jsonify({"error": str(ex)}), 400
+    except Exception as ex:
+        return jsonify({"error": f"no_se_puede_actualizar: {ex}"}), 500

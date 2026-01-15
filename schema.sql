@@ -58,6 +58,9 @@ CREATE TABLE IF NOT EXISTS workspace_members (
     PRIMARY KEY (workspace_id, user_id)
 );
 
+ALTER TABLE IF EXISTS workspace_members
+ADD COLUMN IF NOT EXISTS phone TEXT;
+
 CREATE TABLE IF NOT EXISTS workspace_invites (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,

@@ -159,3 +159,32 @@ class Workspace {
     );
   }
 }
+
+class WorkspaceInvite {
+  final String id;
+  final String email;
+  final String inviteCode;
+  final String role;
+  final DateTime? expiresAt;
+  final DateTime? createdAt;
+
+  WorkspaceInvite({
+    required this.id,
+    required this.email,
+    required this.inviteCode,
+    required this.role,
+    this.expiresAt,
+    this.createdAt,
+  });
+
+  factory WorkspaceInvite.fromJson(Map<String, dynamic> json) {
+    return WorkspaceInvite(
+      id: (json['id'] ?? '').toString(),
+      email: (json['email'] as String?) ?? '',
+      inviteCode: (json['invite_code'] as String?) ?? '',
+      role: (json['role'] as String?) ?? '',
+      expiresAt: _parseDate(json['expires_at']),
+      createdAt: _parseDate(json['created_at']),
+    );
+  }
+}
