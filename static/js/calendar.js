@@ -386,16 +386,6 @@
     const timeText = start ? formatHourHM(start) : "--:--";
     const datetime = escapeHtml(appt.start_time || appt.end_time || "");
     const title = escapeHtml(appt.title || "(Sin titulo)");
-    const editArgs = [
-      Number(appt.id),
-      JSON.stringify(appt.title || ""),
-      JSON.stringify(appt.description || ""),
-      JSON.stringify(appt.start_time || ""),
-      JSON.stringify(appt.end_time || ""),
-      JSON.stringify(appt.status || DEFAULT_STATUS),
-      appt.client_id == null ? "null" : Number(appt.client_id),
-    ].join(", ");
-
     return `
       <div class="appointment-card status-${status}" data-appointment-id="${escapeHtml(appt.id)}">
         <div class="d-flex align-items-center gap-2 flex-grow-1">
@@ -424,7 +414,15 @@
           </div>
         </div>
         <div class="d-flex flex-column gap-1 ms-2">
-          <button class="btn-icon-soft primary" type="button" onclick="openEdit(${editArgs})" title="Editar">
+          <button class="btn-icon-soft primary" type="button" data-appointment-edit
+            data-appointment-id="${escapeHtml(appt.id)}"
+            data-appointment-title="${escapeHtml(appt.title || "")}"
+            data-appointment-description="${escapeHtml(appt.description || "")}"
+            data-appointment-start="${escapeHtml(appt.start_time || "")}"
+            data-appointment-end="${escapeHtml(appt.end_time || "")}"
+            data-appointment-status="${escapeHtml(appt.status || DEFAULT_STATUS)}"
+            data-appointment-client="${escapeHtml(appt.client_id == null ? "" : appt.client_id)}"
+            title="Editar">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 20h9" />
@@ -1623,18 +1621,19 @@
       statusBadge.style.padding = "0.1rem 0.4rem";
     }
 
-    // Update Edit Button onclick
+    // Update Edit Button data attrs (no inline JS)
     const editBtn = card.querySelector("button.btn-icon-soft.primary");
     if (editBtn) {
       const startForm = ev.start ? formatLocalPayload(new Date(ev.start)) : "";
       const endForm = ev.end ? formatLocalPayload(new Date(ev.end)) : "";
-      // Escape strings
-      const safeTitle = (ev.title || "").replace(/'/g, "&#39;");
-      const safeDesc = (ev.description || "").replace(/'/g, "&#39;");
-      editBtn.setAttribute(
-        "onclick",
-        `openEdit(${ev.id}, '${safeTitle}', '${safeDesc}', '${startForm}', '${endForm}', '${ev.status || DEFAULT_STATUS}', ${ev.client_id == null ? "null" : ev.client_id})`
-      );
+      editBtn.dataset.appointmentId = String(ev.id ?? "");
+      editBtn.dataset.appointmentTitle = String(ev.title ?? "");
+      editBtn.dataset.appointmentDescription = String(ev.description ?? "");
+      editBtn.dataset.appointmentStart = String(startForm);
+      editBtn.dataset.appointmentEnd = String(endForm);
+      editBtn.dataset.appointmentStatus = String(ev.status || DEFAULT_STATUS);
+      editBtn.dataset.appointmentClient = ev.client_id == null ? "" : String(ev.client_id);
+      editBtn.setAttribute("data-appointment-edit", "");
     }
   }
 
@@ -2048,8 +2047,14 @@
         </div>
       </div>
       <div class="d-flex flex-column gap-1">
-        <button class="btn-icon-soft primary" type="button"
-          onclick="openEdit(${ev.id || ""}, '${(ev.title || "").replace(/'/g, "&#39;")}', '${(ev.description || "").replace(/'/g, "&#39;")}', '${startForm}', '${endForm}', '${eventStatus}', ${clientIdParam})"
+        <button class="btn-icon-soft primary" type="button" data-appointment-edit
+          data-appointment-id="${ev.id || ""}"
+          data-appointment-title="${(ev.title || "").replace(/"/g, "&quot;")}"
+          data-appointment-description="${(ev.description || "").replace(/"/g, "&quot;")}"
+          data-appointment-start="${startForm}"
+          data-appointment-end="${endForm}"
+          data-appointment-status="${eventStatus}"
+          data-appointment-client="${clientIdParam === "null" ? "" : clientIdParam}"
           title="Editar">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -2058,13 +2063,8 @@
           </svg>
         </button>
         </button>
-        <button class="btn-icon-soft danger" type="button" title="Eliminar" onclick="
-          if(confirm('Eliminar esta cita?')) {
-            window.deleteEvent(${ev.id}).then(ok => {
-              if(!ok) alert('No se pudo eliminar');
-            });
-          }
-        ">
+        <button class="btn-icon-soft danger" type="button" title="Eliminar" data-appointment-delete
+          data-appointment-id="${ev.id || ""}">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="18" y1="6" x2="6" y2="18" />
@@ -2251,6 +2251,34 @@
       const val = e.target.checked;
       document.querySelectorAll(".appointment-check").forEach((ch) => (ch.checked = val));
       updateBulkState();
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    const editBtn = e.target.closest('[data-appointment-edit]');
+    if (editBtn) {
+      const id = Number(editBtn.dataset.appointmentId || editBtn.dataset.id || 0);
+      const title = editBtn.dataset.appointmentTitle || "";
+      const desc = editBtn.dataset.appointmentDescription || "";
+      const start = editBtn.dataset.appointmentStart || "";
+      const end = editBtn.dataset.appointmentEnd || "";
+      const status = editBtn.dataset.appointmentStatus || DEFAULT_STATUS;
+      const clientRaw = editBtn.dataset.appointmentClient;
+      const clientId = clientRaw === "" || clientRaw == null ? null : Number(clientRaw);
+      if (id) {
+        openEdit(id, title, desc, start, end, status, clientId);
+      }
+      return;
+    }
+
+    const deleteBtn = e.target.closest('[data-appointment-delete]');
+    if (deleteBtn) {
+      const id = Number(deleteBtn.dataset.appointmentId || deleteBtn.dataset.id || 0);
+      if (!id) return;
+      if (!confirm('Eliminar esta cita?')) return;
+      window.deleteEvent(id).then((ok) => {
+        if (!ok) alert('No se pudo eliminar');
+      });
     }
   });
 
