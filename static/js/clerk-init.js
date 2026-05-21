@@ -104,7 +104,14 @@
 
   const bootstrap = async () => {
     try {
-      await window.Clerk.load({ publishableKey })
+      if (!window.__internal_ClerkUICtor) {
+        throw new Error('Clerk UI components were not loaded.')
+      }
+
+      await window.Clerk.load({
+        publishableKey,
+        ui: { ClerkUI: window.__internal_ClerkUICtor },
+      })
     } catch (error) {
       console.error('Error inicializando Clerk', error)
       const hint =

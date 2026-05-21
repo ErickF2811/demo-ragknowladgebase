@@ -52,7 +52,7 @@ APP_TIMEZONE=UTC
 ## Instalar y correr
 ```bash
 python -m venv .venv
-.\.venv\Scripts\activate        # en Windows (o source .venv/bin/activate en Linux/Mac)
+.venv\Scripts\activate        # en Windows (o source .venv/bin/activate en Linux/Mac)
 pip install -r requirements.txt
 psql "POSTGRES_DSN" -f schema.sql   # crea schema vetbot y tablas
 python app.py

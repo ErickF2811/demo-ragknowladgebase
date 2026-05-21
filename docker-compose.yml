@@ -1,6 +1,6 @@
 services:
   web:
-    image: erifcamp/flow-panel:v1.0.0
+    image: erifcamp/flow-panel:v2.0.8
     build: .
     ports:
       - "5000:5000"
@@ -39,9 +39,9 @@ services:
       - DEFAULT_OWNER_NAME=Demo Vetflow
 
       # Clerk (opcional)
-      - VITE_CLERK_PUBLISHABLE_KEY={}
-      - CLERK_PUBLISHABLE_KEY={}
-      - CLERK_SECRET_KEY={}
+      - VITE_CLERK_PUBLISHABLE_KEY=pk_test_cmVhZHktY2FsZi0xLmNsZXJrLmFjY291bnRzLmRldiQ
+      - CLERK_PUBLISHABLE_KEY=pk_test_cmVhZHktY2FsZi0xLmNsZXJrLmFjY291bnRzLmRldiQ
+      - CLERK_SECRET_KEY=sk_test_YrlMxWPs1jCF9jEuEpMU4TWq5jfBqjXi0nVACFiIRG
 
       # Vetflow API Key
       - VETFLOW_API_KEY={}
